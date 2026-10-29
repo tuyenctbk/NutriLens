@@ -1,0 +1,6 @@
+{
+  "name": "NutriLens",
+  "description": "Additive & allergen food scanner powered by Open Food Facts and Google ML Kit with offline Room caching and personalized safety alerts.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
