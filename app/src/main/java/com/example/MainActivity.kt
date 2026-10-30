@@ -132,6 +132,7 @@ fun NutriLensApp(viewModel: NutriLensViewModel) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val userProfile by viewModel.userProfile.collectAsStateWithLifecycle()
     val historyProducts by viewModel.historyList.collectAsStateWithLifecycle()
+    val recentHistoryProducts by viewModel.recentHistoryList.collectAsStateWithLifecycle()
     val pantryList by viewModel.pantryList.collectAsStateWithLifecycle()
 
     var showSplash by remember { mutableStateOf(true) }
@@ -310,7 +311,7 @@ fun NutriLensApp(viewModel: NutriLensViewModel) {
 
                     is ScreenDestination.History -> {
                         HistoryScreen(
-                            products = historyProducts,
+                            products = recentHistoryProducts,
                             currentFilter = uiState.historyFilter,
                             searchQuery = uiState.searchQuery,
                             onFilterChange = { filter -> viewModel.setHistoryFilter(filter) },
@@ -528,7 +529,7 @@ fun NutriLensSplashScreen(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "Open Food Facts • Room Cache • ML Kit",
+                        text = stringResource(R.string.splash_technologies),
                         style = MaterialTheme.typography.labelSmall,
                         color = Color(0xFFD1FAE5)
                     )

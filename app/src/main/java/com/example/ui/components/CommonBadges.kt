@@ -68,7 +68,7 @@ fun NutriScoreCard(grade: String?, modifier: Modifier = Modifier) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "NUTRI-SCORE",
+                text = stringResource(R.string.nutri_score),
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -102,11 +102,11 @@ fun NutriScoreCard(grade: String?, modifier: Modifier = Modifier) {
                 }
                 Spacer(modifier = Modifier.height(6.dp))
                 val desc = when (cleanGrade) {
-                    "a" -> "Optimal Nutritional Quality"
-                    "b" -> "Good Nutritional Quality"
-                    "c" -> "Moderate Nutritional Quality"
-                    "d" -> "Poor Nutritional Quality"
-                    "e" -> "Low Nutritional Quality"
+                    "a" -> stringResource(R.string.optimal_nutritional_quality)
+                    "b" -> stringResource(R.string.good_nutritional_quality)
+                    "c" -> stringResource(R.string.moderate_nutritional_quality)
+                    "d" -> stringResource(R.string.poor_nutritional_quality)
+                    "e" -> stringResource(R.string.low_nutritional_quality)
                     else -> ""
                 }
                 Text(
@@ -117,7 +117,7 @@ fun NutriScoreCard(grade: String?, modifier: Modifier = Modifier) {
                 )
             } else {
                 Text(
-                    text = "Not Calculated",
+                    text = stringResource(R.string.not_calculated),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -129,11 +129,11 @@ fun NutriScoreCard(grade: String?, modifier: Modifier = Modifier) {
 @Composable
 fun NovaGroupCard(group: Int?, modifier: Modifier = Modifier) {
     val (color, title, subtitle) = when (group) {
-        1 -> Triple(Nova1, "Group 1", "Unprocessed / Minimal")
-        2 -> Triple(Nova2, "Group 2", "Processed Culinary")
-        3 -> Triple(Nova3, "Group 3", "Processed Food")
-        4 -> Triple(Nova4, "Group 4", "Ultra-Processed")
-        else -> Triple(Color.Gray, "Unknown", "Processing unrated")
+        1 -> Triple(Nova1, stringResource(R.string.group_1_title), stringResource(R.string.unprocessed_minimal))
+        2 -> Triple(Nova2, stringResource(R.string.group_2_title), stringResource(R.string.processed_culinary))
+        3 -> Triple(Nova3, stringResource(R.string.group_3_title), stringResource(R.string.processed_food))
+        4 -> Triple(Nova4, stringResource(R.string.group_4_title), stringResource(R.string.ultra_processed))
+        else -> Triple(Color.Gray, stringResource(R.string.group_unknown), stringResource(R.string.processing_unrated))
     }
 
     Surface(
@@ -147,7 +147,7 @@ fun NovaGroupCard(group: Int?, modifier: Modifier = Modifier) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "NOVA CLASSIFICATION",
+                text = stringResource(R.string.nova_classification),
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -196,12 +196,12 @@ fun NovaGroupCard(group: Int?, modifier: Modifier = Modifier) {
 fun EcoScoreCard(grade: String?, modifier: Modifier = Modifier) {
     val cleanGrade = grade?.lowercase()
     val (color, desc) = when (cleanGrade) {
-        "a" -> Pair(NutriScoreA, "Very Low Eco-Impact")
-        "b" -> Pair(NutriScoreB, "Low Eco-Impact")
-        "c" -> Pair(NutriScoreC, "Moderate Impact")
-        "d" -> Pair(NutriScoreD, "High Eco-Impact")
-        "e" -> Pair(NutriScoreE, "Very High Impact")
-        else -> Pair(Color.Gray, "Eco-Score Unknown")
+        "a" -> Pair(NutriScoreA, stringResource(R.string.very_low_eco_impact))
+        "b" -> Pair(NutriScoreB, stringResource(R.string.low_eco_impact))
+        "c" -> Pair(NutriScoreC, stringResource(R.string.moderate_eco_impact))
+        "d" -> Pair(NutriScoreD, stringResource(R.string.high_eco_impact))
+        "e" -> Pair(NutriScoreE, stringResource(R.string.very_high_eco_impact))
+        else -> Pair(Color.Gray, stringResource(R.string.eco_score_unknown))
     }
 
     Surface(
@@ -215,7 +215,7 @@ fun EcoScoreCard(grade: String?, modifier: Modifier = Modifier) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "ECO-SCORE",
+                text = stringResource(R.string.eco_score),
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -224,7 +224,7 @@ fun EcoScoreCard(grade: String?, modifier: Modifier = Modifier) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     imageVector = Icons.Default.Eco,
-                    contentDescription = "Eco Score",
+                    contentDescription = stringResource(R.string.eco_score),
                     tint = color,
                     modifier = Modifier.size(24.dp)
                 )
@@ -297,13 +297,13 @@ fun AdditiveChip(additive: AdditiveDetail, modifier: Modifier = Modifier) {
             text = {
                 Column {
                     Text(
-                        text = "Category: ${additive.purpose}",
+                        text = stringResource(R.string.category_label, additive.purpose),
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.SemiBold
                     )
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        text = "Risk Level: ${additive.risk.name}",
+                        text = stringResource(R.string.risk_level_label, additive.risk.name),
                         style = MaterialTheme.typography.bodySmall,
                         color = textColor,
                         fontWeight = FontWeight.Bold

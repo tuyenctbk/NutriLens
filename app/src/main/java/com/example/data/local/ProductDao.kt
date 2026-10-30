@@ -11,6 +11,9 @@ interface ProductDao {
     @Query("SELECT * FROM scanned_products ORDER BY scannedAt DESC")
     fun getAllScanned(): Flow<List<ScannedProductEntity>>
 
+    @Query("SELECT * FROM scanned_products ORDER BY scannedAt DESC LIMIT :limit")
+    fun getRecentScanned(limit: Int = 20): Flow<List<ScannedProductEntity>>
+
     @Query("SELECT * FROM scanned_products WHERE isFavorite = 1 ORDER BY scannedAt DESC")
     fun getFavorites(): Flow<List<ScannedProductEntity>>
 

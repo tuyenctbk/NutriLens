@@ -73,6 +73,13 @@ class NutriLensViewModel(application: Application) : AndroidViewModel(applicatio
             initialValue = emptyList()
         )
 
+    val recentHistoryList: StateFlow<List<Product>> = repository.getRecentScanned(20)
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
     val favoriteList: StateFlow<List<Product>> = repository.favoriteProducts
         .stateIn(
             scope = viewModelScope,

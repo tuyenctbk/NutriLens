@@ -138,12 +138,12 @@ fun HistoryScreen(
                 title = {
                     Column {
                         Text(
-                            text = "Scan History",
+                            text = stringResource(R.string.scan_history_title),
                             fontWeight = FontWeight.Bold,
                             style = MaterialTheme.typography.titleMedium
                         )
                         Text(
-                            text = if (products.isEmpty()) "Offline Room Cache" else "${products.size} scanned items saved offline in Room",
+                            text = if (products.isEmpty()) stringResource(R.string.offline_room_cache_title) else stringResource(R.string.scan_history_subtitle_count, products.size),
                             style = MaterialTheme.typography.bodySmall,
                             fontSize = 11.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -156,7 +156,7 @@ fun HistoryScreen(
                             onClick = { showClearConfirmDialog = true },
                             modifier = Modifier.testTag("clear_history_button")
                         ) {
-                            Icon(Icons.Default.DeleteSweep, contentDescription = "Clear all scans")
+                            Icon(Icons.Default.DeleteSweep, contentDescription = stringResource(R.string.clear_scans_cd))
                         }
                     }
                 },
@@ -184,7 +184,7 @@ fun HistoryScreen(
                 trailingIcon = {
                     if (searchQuery.isNotEmpty()) {
                         IconButton(onClick = { onSearchChange("") }) {
-                            Icon(Icons.Default.Clear, contentDescription = "Clear search")
+                            Icon(Icons.Default.Clear, contentDescription = stringResource(R.string.clear_search))
                         }
                     }
                 },
@@ -259,7 +259,7 @@ fun HistoryScreen(
                             }
                             Spacer(modifier = Modifier.height(16.dp))
                             Text(
-                                text = if (searchQuery.isNotBlank()) "No Matching Products Found" else "No Scan History Yet",
+                                text = if (searchQuery.isNotBlank()) stringResource(R.string.no_matching_products) else stringResource(R.string.no_scan_history),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 textAlign = TextAlign.Center
@@ -267,9 +267,9 @@ fun HistoryScreen(
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
                                 text = if (searchQuery.isNotBlank()) {
-                                    "Try clearing your search query or switching filters to locate previously scanned items."
+                                    stringResource(R.string.pantry_empty_search_desc)
                                 } else {
-                                    "Every barcode you scan is cached in your device's local Room database so you can quickly revisit ingredients, allergens, and ultra-processing scores anytime offline."
+                                    stringResource(R.string.empty_history_desc)
                                 },
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -431,7 +431,7 @@ private fun ProductHistoryItemCard(
                     ) {
                         Icon(
                             imageVector = if (product.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                            contentDescription = "Bookmark",
+                            contentDescription = stringResource(R.string.bookmark_cd),
                             tint = if (product.isFavorite) Color(0xFFE91E63) else MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(20.dp)
                         )
@@ -442,7 +442,7 @@ private fun ProductHistoryItemCard(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Delete,
-                            contentDescription = "Delete scan",
+                            contentDescription = stringResource(R.string.delete_scan_cd),
                             tint = MaterialTheme.colorScheme.outline,
                             modifier = Modifier.size(18.dp)
                         )
@@ -473,7 +473,7 @@ private fun ProductHistoryItemCard(
                         color = nsColor
                     ) {
                         Text(
-                            text = "Nutri-Score ${grade.uppercase()}",
+                            text = stringResource(R.string.nutri_score_badge, grade.uppercase()),
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White,
@@ -492,11 +492,11 @@ private fun ProductHistoryItemCard(
                         else -> Color.Gray
                     }
                     val label = when (nova) {
-                        1 -> "NOVA 1 (Natural)"
-                        2 -> "NOVA 2 (Culinary)"
-                        3 -> "NOVA 3 (Processed)"
-                        4 -> "NOVA 4 (Ultra-Processed)"
-                        else -> "NOVA $nova"
+                        1 -> stringResource(R.string.nova_1_natural)
+                        2 -> stringResource(R.string.nova_2_culinary)
+                        3 -> stringResource(R.string.nova_3_processed)
+                        4 -> stringResource(R.string.nova_4_ultra_processed)
+                        else -> stringResource(R.string.nova_generic, nova)
                     }
                     Surface(
                         shape = RoundedCornerShape(6.dp),
@@ -519,7 +519,7 @@ private fun ProductHistoryItemCard(
                         color = Color(0xFFFFEBEE)
                     ) {
                         Text(
-                            text = "🌴 Palm Oil",
+                            text = stringResource(R.string.palm_oil_badge),
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFFC62828),
@@ -532,7 +532,7 @@ private fun ProductHistoryItemCard(
                         color = Color(0xFFE8F5E9)
                     ) {
                         Text(
-                            text = "🌿 Palm-Oil Free",
+                            text = stringResource(R.string.palm_oil_free_badge),
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFF2E7D32),
@@ -570,7 +570,7 @@ private fun ProductHistoryItemCard(
                         color = chipColor
                     ) {
                         Text(
-                            text = "🧪 ${product.additives.size} Additive${if (product.additives.size > 1) "s" else ""}",
+                            text = stringResource(R.string.additives_count_badge, product.additives.size),
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Bold,
                             color = textColor,
@@ -594,7 +594,7 @@ private fun ProductHistoryItemCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Revisit Ingredient & Safety Analysis",
+                    text = stringResource(R.string.revisit_analysis),
                     fontWeight = FontWeight.SemiBold,
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.primary
@@ -610,16 +610,18 @@ private fun ProductHistoryItemCard(
     }
 }
 
+@Composable
 private fun formatScanTimestamp(timestamp: Long): String {
-    if (timestamp <= 0) return "Recent"
+    if (timestamp <= 0) return stringResource(R.string.time_recent)
     val now = System.currentTimeMillis()
     val diff = now - timestamp
 
     return when {
-        diff < 60_000L -> "Just now"
-        diff < 3600_000L -> "${diff / 60_000L}m ago"
-        diff < 86400_000L -> "${diff / 3600_000L}h ago"
-        diff < 172800_000L -> "Yesterday"
+        diff < 60_000L -> stringResource(R.string.time_just_now)
+        diff < 3600_000L -> stringResource(R.string.time_minutes_ago, (diff / 60_000L).toInt())
+        diff < 86400_000L -> stringResource(R.string.time_hours_ago, (diff / 3600_000L).toInt())
+        diff < 172800_000L -> stringResource(R.string.time_yesterday)
         else -> SimpleDateFormat("MMM d, yyyy", Locale.getDefault()).format(Date(timestamp))
     }
 }
+
