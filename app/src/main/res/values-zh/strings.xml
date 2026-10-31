@@ -239,4 +239,7 @@
     <string name="favorite_cd">收藏</string>
     <string name="refresh_cd">刷新数据</string>
     <string name="dv_percent_format">%1$.1fg / %2$dg (每日推荐量的 %3$d%%)</string>
+    <string name="nutrition_chart_title">营养成分图表</string>
+    <string name="nutrition_chart_subtitle">每 100g 份量的可视化营养分布</string>
 </resources>
+

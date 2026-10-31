@@ -32,7 +32,9 @@
     <string name="nutritional_values">Nutritional Values (per 100g)</string>
     <string name="scan_history_title">Scan History</string>
     <string name="offline_room_cache_title">Offline Room Cache</string>
+    <string name="scan_history_subtitle">scanned items saved offline in Room</string>
     <string name="scan_history_subtitle_count">%1$d scanned items saved offline in Room</string>
+
     <string name="search_history_placeholder">Search by name, brand, barcode, allergen, or E-number...</string>
     <string name="filter_all">All</string>
     <string name="filter_favorites">⭐ Bookmarked</string>
@@ -257,4 +259,7 @@
     <string name="favorite_cd">Favorite</string>
     <string name="refresh_cd">Refresh data</string>
     <string name="dv_percent_format">%1$.1fg / %2$dg (%3$d%% DV)</string>
+    <string name="nutrition_chart_title">Graphical Nutritional Breakdown</string>
+    <string name="nutrition_chart_subtitle">Visual breakdown per 100g serving</string>
 </resources>
+

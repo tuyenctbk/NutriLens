@@ -71,7 +71,9 @@ import com.example.ui.components.AdditiveChip
 import com.example.ui.components.EcoScoreCard
 import com.example.ui.components.NovaGroupCard
 import com.example.ui.components.NutriScoreCard
+import com.example.ui.components.NutritionalBarChart
 import com.example.ui.theme.AllergenDanger
+
 import com.example.ui.theme.AllergenWarning
 import com.example.ui.theme.PalmOilWarning
 import com.example.ui.theme.SafeGreen
@@ -100,7 +102,7 @@ fun ProductDetailScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = product?.name ?: "Product Analysis",
+                        text = product?.name ?: stringResource(R.string.product_analysis),
                         maxLines = 1,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
@@ -111,7 +113,7 @@ fun ProductDetailScreen(
                         onClick = onBack,
                         modifier = Modifier.testTag("back_button")
                     ) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back_cd))
                     }
                 },
                 actions = {
@@ -120,7 +122,7 @@ fun ProductDetailScreen(
                             onClick = onRefresh,
                             modifier = Modifier.testTag("refresh_product_button")
                         ) {
-                            Icon(Icons.Default.Refresh, contentDescription = "Refresh data")
+                            Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.refresh_cd))
                         }
                         IconButton(
                             onClick = { onToggleFavorite(product) },
@@ -128,7 +130,7 @@ fun ProductDetailScreen(
                         ) {
                             Icon(
                                 imageVector = if (product.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                                contentDescription = "Favorite",
+                                contentDescription = stringResource(R.string.favorite_cd),
                                 tint = if (product.isFavorite) Color(0xFFE91E63) else MaterialTheme.colorScheme.onSurface
                             )
                         }
@@ -158,13 +160,13 @@ fun ProductDetailScreen(
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
-                            text = "Analyzing additives & allergens...",
+                            text = stringResource(R.string.analyzing_msg),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "Consulting Open Food Facts & Room cache",
+                            text = stringResource(R.string.consulting_db),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.outline
                         )
@@ -187,7 +189,7 @@ fun ProductDetailScreen(
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
-                            text = "Product Not Found",
+                            text = stringResource(R.string.product_not_found),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
@@ -295,13 +297,13 @@ private fun ProductContent(
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "UPC/EAN: ${product.barcode}",
+                        text = stringResource(R.string.upc_ean_label, product.barcode),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     if (!product.quantity.isNullOrBlank()) {
                         Text(
-                            text = "Net: ${product.quantity}",
+                            text = stringResource(R.string.net_weight_label, product.quantity),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -312,13 +314,13 @@ private fun ProductContent(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
                             imageVector = Icons.Default.CloudDone,
-                            contentDescription = "Cached",
+                            contentDescription = stringResource(R.string.cached_room_badge),
                             tint = Color(0xFF2E7D32),
                             modifier = Modifier.size(14.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = "Cached in Room DB",
+                            text = stringResource(R.string.cached_room_badge),
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Medium,
                             color = Color(0xFF2E7D32)
@@ -337,7 +339,7 @@ private fun ProductContent(
 
         // Food Scores Trio (Nutri-Score, NOVA Group, Eco-Score)
         Text(
-            text = "Food Safety & Quality Scores",
+            text = stringResource(R.string.food_quality_scores),
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface
@@ -369,7 +371,7 @@ private fun ProductContent(
 
         // Dietary & Formulation Badges (Palm Oil, Vegan, Vegetarian)
         Text(
-            text = "Dietary Profile & Palm Oil Check",
+            text = stringResource(R.string.dietary_profile_check),
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface
@@ -382,7 +384,7 @@ private fun ProductContent(
 
         // Food Additives Section (E-Numbers)
         Text(
-            text = "Food Additives (${product.additives.size} detected)",
+            text = stringResource(R.string.food_additives_detected_count, product.additives.size),
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface
@@ -416,7 +418,7 @@ private fun ProductContent(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "No chemical food additives detected in this product.",
+                        text = stringResource(R.string.no_additives_detected),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface
                     )
@@ -428,7 +430,7 @@ private fun ProductContent(
 
         // Ingredients Text
         Text(
-            text = "Ingredients List",
+            text = stringResource(R.string.ingredients_list),
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface
@@ -442,7 +444,7 @@ private fun ProductContent(
         ) {
             Column(modifier = Modifier.padding(14.dp)) {
                 Text(
-                    text = product.ingredientsText ?: "Ingredients not listed on Open Food Facts for this product.",
+                    text = product.ingredientsText ?: stringResource(R.string.ingredients_not_listed),
                     style = MaterialTheme.typography.bodyMedium,
                     lineHeight = 20.sp,
                     color = MaterialTheme.colorScheme.onSurface
@@ -452,9 +454,14 @@ private fun ProductContent(
 
         Spacer(modifier = Modifier.height(20.dp))
 
+        // Graphical Nutritional Breakdown Bar Chart
+        NutritionalBarChart(nutriments = product.nutriments)
+
+        Spacer(modifier = Modifier.height(20.dp))
+
         // Nutrition Table (per 100g)
         Text(
-            text = "Nutritional Values (per 100g)",
+            text = stringResource(R.string.nutritional_values),
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface
@@ -462,6 +469,7 @@ private fun ProductContent(
         Spacer(modifier = Modifier.height(8.dp))
 
         NutritionTable(nutriments = product.nutriments)
+
 
         if (!isSupporter) {
             Spacer(modifier = Modifier.height(16.dp))
@@ -512,9 +520,9 @@ fun PersonalizedVerdictBanner(warnings: List<HealthWarning>, modifier: Modifier 
     val hasCaution = warnings.any { it.severity == WarningSeverity.CAUTION }
 
     val (bgColor, borderColor, title, headerIcon) = when {
-        hasDanger -> Quadruple(Color(0xFFFFEBEE), AllergenDanger, "Personal Allergen / Diet Alert", Icons.Default.Warning)
-        hasCaution -> Quadruple(Color(0xFFFFF3E0), AllergenWarning, "Health & Processing Warnings", Icons.Default.WarningAmber)
-        else -> Quadruple(Color(0xFFE8F5E9), SafeGreen, "All Clear — Safe for Your Profile", Icons.Default.CheckCircle)
+        hasDanger -> Quadruple(Color(0xFFFFEBEE), AllergenDanger, stringResource(R.string.danger_verdict_title), Icons.Default.Warning)
+        hasCaution -> Quadruple(Color(0xFFFFF3E0), AllergenWarning, stringResource(R.string.caution_verdict_title), Icons.Default.WarningAmber)
+        else -> Quadruple(Color(0xFFE8F5E9), SafeGreen, stringResource(R.string.all_clear_verdict_title), Icons.Default.CheckCircle)
     }
 
     Card(
@@ -572,7 +580,7 @@ fun PersonalizedVerdictBanner(warnings: List<HealthWarning>, modifier: Modifier 
                 }
             } else {
                 Text(
-                    text = "No allergen conflicts, forbidden diets, or sensitive additives detected based on your custom profile preferences.",
+                    text = stringResource(R.string.all_clear_verdict_desc),
                     style = MaterialTheme.typography.bodyMedium,
                     color = Color(0xFF1B5E20)
                 )
@@ -589,10 +597,10 @@ fun DietaryFlagsRow(product: Product, modifier: Modifier = Modifier) {
     ) {
         // Palm Oil Badge
         val (palmBg, palmText, palmLabel) = when (product.palmOilStatus) {
-            PalmOilStatus.FREE -> Triple(Color(0xFFE8F5E9), SafeGreen, "Palm Oil Free")
-            PalmOilStatus.CONTAINS -> Triple(Color(0xFFFFEBEE), PalmOilWarning, "Contains Palm Oil")
-            PalmOilStatus.MAY_CONTAIN -> Triple(Color(0xFFFFF8E1), Color(0xFFE65100), "May Contain Palm")
-            PalmOilStatus.UNKNOWN -> Triple(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.colorScheme.onSurfaceVariant, "Palm Oil Unknown")
+            PalmOilStatus.FREE -> Triple(Color(0xFFE8F5E9), SafeGreen, stringResource(R.string.palm_oil_free))
+            PalmOilStatus.CONTAINS -> Triple(Color(0xFFFFEBEE), PalmOilWarning, stringResource(R.string.contains_palm_oil))
+            PalmOilStatus.MAY_CONTAIN -> Triple(Color(0xFFFFF8E1), Color(0xFFE65100), stringResource(R.string.may_contain_palm_oil))
+            PalmOilStatus.UNKNOWN -> Triple(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.colorScheme.onSurfaceVariant, stringResource(R.string.palm_oil_unknown))
         }
 
         Surface(
@@ -605,7 +613,7 @@ fun DietaryFlagsRow(product: Product, modifier: Modifier = Modifier) {
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "PALM OIL",
+                    text = stringResource(R.string.badge_palm_oil),
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Bold,
                     color = palmText.copy(alpha = 0.8f)
@@ -623,10 +631,10 @@ fun DietaryFlagsRow(product: Product, modifier: Modifier = Modifier) {
 
         // Vegan Badge
         val (veganBg, veganText, veganLabel) = when (product.veganStatus) {
-            DietStatus.SUITABLE -> Triple(Color(0xFFE8F5E9), SafeGreen, "100% Vegan")
-            DietStatus.NOT_SUITABLE -> Triple(Color(0xFFFFEBEE), AllergenDanger, "Non-Vegan")
-            DietStatus.MAYBE -> Triple(Color(0xFFFFF8E1), Color(0xFFE65100), "Maybe Vegan")
-            DietStatus.UNKNOWN -> Triple(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.colorScheme.onSurfaceVariant, "Vegan Unknown")
+            DietStatus.SUITABLE -> Triple(Color(0xFFE8F5E9), SafeGreen, stringResource(R.string.diet_vegan_100))
+            DietStatus.NOT_SUITABLE -> Triple(Color(0xFFFFEBEE), AllergenDanger, stringResource(R.string.diet_non_vegan))
+            DietStatus.MAYBE -> Triple(Color(0xFFFFF8E1), Color(0xFFE65100), stringResource(R.string.diet_maybe_vegan))
+            DietStatus.UNKNOWN -> Triple(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.colorScheme.onSurfaceVariant, stringResource(R.string.diet_vegan_unknown))
         }
 
         Surface(
@@ -639,7 +647,7 @@ fun DietaryFlagsRow(product: Product, modifier: Modifier = Modifier) {
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "VEGAN",
+                    text = stringResource(R.string.badge_vegan),
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Bold,
                     color = veganText.copy(alpha = 0.8f)
@@ -657,10 +665,10 @@ fun DietaryFlagsRow(product: Product, modifier: Modifier = Modifier) {
 
         // Vegetarian Badge
         val (vegBg, vegText, vegLabel) = when (product.vegetarianStatus) {
-            DietStatus.SUITABLE -> Triple(Color(0xFFE8F5E9), SafeGreen, "Vegetarian")
-            DietStatus.NOT_SUITABLE -> Triple(Color(0xFFFFEBEE), AllergenDanger, "Non-Vegetarian")
-            DietStatus.MAYBE -> Triple(Color(0xFFFFF8E1), Color(0xFFE65100), "Check Diet")
-            DietStatus.UNKNOWN -> Triple(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.colorScheme.onSurfaceVariant, "Diet Unknown")
+            DietStatus.SUITABLE -> Triple(Color(0xFFE8F5E9), SafeGreen, stringResource(R.string.diet_vegetarian))
+            DietStatus.NOT_SUITABLE -> Triple(Color(0xFFFFEBEE), AllergenDanger, stringResource(R.string.diet_non_vegetarian))
+            DietStatus.MAYBE -> Triple(Color(0xFFFFF8E1), Color(0xFFE65100), stringResource(R.string.diet_check))
+            DietStatus.UNKNOWN -> Triple(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.colorScheme.onSurfaceVariant, stringResource(R.string.diet_vegetarian_unknown))
         }
 
         Surface(
@@ -673,7 +681,7 @@ fun DietaryFlagsRow(product: Product, modifier: Modifier = Modifier) {
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "VEGETARIAN",
+                    text = stringResource(R.string.badge_vegetarian),
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Bold,
                     color = vegText.copy(alpha = 0.8f)
@@ -699,14 +707,14 @@ fun NutritionTable(nutriments: com.example.model.NutrimentsInfo, modifier: Modif
         modifier = modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
-            NutritionRow("Calories", "${nutriments.energyKcal?.toInt() ?: "--"} kcal")
-            NutritionRow("Total Fat", formatGrams(nutriments.fat), level = getTrafficLight(nutriments.fat, 3.0, 17.5))
-            NutritionRow("Saturated Fat", formatGrams(nutriments.saturatedFat), level = getTrafficLight(nutriments.saturatedFat, 1.5, 5.0))
-            NutritionRow("Carbohydrates", formatGrams(nutriments.carbs))
-            NutritionRow("Sugars", formatGrams(nutriments.sugars), level = getTrafficLight(nutriments.sugars, 5.0, 22.5))
-            NutritionRow("Fiber", formatGrams(nutriments.fiber))
-            NutritionRow("Proteins", formatGrams(nutriments.proteins))
-            NutritionRow("Salt", formatGrams(nutriments.salt), level = getTrafficLight(nutriments.salt, 0.3, 1.5))
+            NutritionRow(stringResource(R.string.nutri_calories), "${nutriments.energyKcal?.toInt() ?: "--"} kcal")
+            NutritionRow(stringResource(R.string.nutri_fat), formatGrams(nutriments.fat), level = getTrafficLight(nutriments.fat, 3.0, 17.5))
+            NutritionRow(stringResource(R.string.nutri_sat_fat), formatGrams(nutriments.saturatedFat), level = getTrafficLight(nutriments.saturatedFat, 1.5, 5.0))
+            NutritionRow(stringResource(R.string.nutri_carbs), formatGrams(nutriments.carbs))
+            NutritionRow(stringResource(R.string.nutri_sugars), formatGrams(nutriments.sugars), level = getTrafficLight(nutriments.sugars, 5.0, 22.5))
+            NutritionRow(stringResource(R.string.nutri_fiber), formatGrams(nutriments.fiber))
+            NutritionRow(stringResource(R.string.nutri_protein), formatGrams(nutriments.proteins))
+            NutritionRow(stringResource(R.string.nutri_salt), formatGrams(nutriments.salt), level = getTrafficLight(nutriments.salt, 0.3, 1.5))
         }
     }
 }
@@ -735,9 +743,9 @@ private fun NutritionRow(label: String, value: String, level: TrafficLight = Tra
             if (level != TrafficLight.NONE) {
                 Spacer(modifier = Modifier.width(8.dp))
                 val (color, text) = when (level) {
-                    TrafficLight.LOW -> Pair(Color(0xFF2E7D32), "Low")
-                    TrafficLight.MODERATE -> Pair(Color(0xFFEF6C00), "Med")
-                    TrafficLight.HIGH -> Pair(Color(0xFFC62828), "High")
+                    TrafficLight.LOW -> Pair(Color(0xFF2E7D32), stringResource(R.string.level_low))
+                    TrafficLight.MODERATE -> Pair(Color(0xFFEF6C00), stringResource(R.string.level_med))
+                    TrafficLight.HIGH -> Pair(Color(0xFFC62828), stringResource(R.string.level_high))
                     TrafficLight.NONE -> Pair(Color.Transparent, "")
                 }
                 Box(

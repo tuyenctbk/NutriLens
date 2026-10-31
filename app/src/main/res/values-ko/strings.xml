@@ -239,4 +239,7 @@
     <string name="favorite_cd">즐겨찾기</string>
     <string name="refresh_cd">데이터 새로고침</string>
     <string name="dv_percent_format">%1$.1fg / %2$dg (일일 권장량의 %3$d%%)</string>
+    <string name="nutrition_chart_title">영양 성분 그래픽 분석</string>
+    <string name="nutrition_chart_subtitle">100g 제공량당 시각적 영양 성분</string>
 </resources>
+

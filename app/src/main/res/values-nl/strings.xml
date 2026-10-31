@@ -239,4 +239,7 @@
     <string name="favorite_cd">Favoriet</string>
     <string name="refresh_cd">Gegevens vernieuwen</string>
     <string name="dv_percent_format">%1$.1fg / %2$dg (%3$d%% RI)</string>
+    <string name="nutrition_chart_title">Grafische Voedingswaardeverdeling</string>
+    <string name="nutrition_chart_subtitle">Visuele verdeling per portie van 100g</string>
 </resources>
+

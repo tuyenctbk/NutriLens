@@ -239,4 +239,7 @@
     <string name="favorite_cd">Favorit</string>
     <string name="refresh_cd">Daten aktualisieren</string>
     <string name="dv_percent_format">%1$.1fg / %2$dg (%3$d%% RM)</string>
+    <string name="nutrition_chart_title">Grafische Nährwertaufschlüsselung</string>
+    <string name="nutrition_chart_subtitle">Visuelle Aufschlüsselung pro 100g Portion</string>
 </resources>
+

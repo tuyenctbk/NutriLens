@@ -239,4 +239,7 @@
     <string name="favorite_cd">Favorito</string>
     <string name="refresh_cd">Atualizar dados</string>
     <string name="dv_percent_format">%1$.1fg / %2$dg (%3$d%% VD)</string>
+    <string name="nutrition_chart_title">Detalhamento Nutricional Gráfico</string>
+    <string name="nutrition_chart_subtitle">Detalhamento visual por porção de 100g</string>
 </resources>
+

@@ -239,4 +239,7 @@
     <string name="favorite_cd">お気に入り</string>
     <string name="refresh_cd">データを更新</string>
     <string name="dv_percent_format">%1$.1fg / %2$dg (目安量の%3$d%%)</string>
+    <string name="nutrition_chart_title">栄養成分グラフ</string>
+    <string name="nutrition_chart_subtitle">100gあたりの視覚的栄養バランス</string>
 </resources>
+

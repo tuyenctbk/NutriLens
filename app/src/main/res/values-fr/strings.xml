@@ -239,4 +239,7 @@
     <string name="favorite_cd">Favori</string>
     <string name="refresh_cd">Actualiser les données</string>
     <string name="dv_percent_format">%1$.1fg / %2$dg (%3$d%% AJR)</string>
+    <string name="nutrition_chart_title">Répartition Nutritionnelle Graphique</string>
+    <string name="nutrition_chart_subtitle">Répartition visuelle pour une portion de 100g</string>
 </resources>
+
