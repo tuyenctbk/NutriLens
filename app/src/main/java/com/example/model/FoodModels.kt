@@ -8,49 +8,49 @@ import com.squareup.moshi.JsonClass
  */
 @JsonClass(generateAdapter = true)
 data class OpenFoodFactsResponse(
-    @Json(name = "status") val status: Int? = 0,
-    @Json(name = "code") val code: String? = null,
-    @Json(name = "status_verbose") val statusVerbose: String? = null,
-    @Json(name = "product") val product: ProductDto? = null
+    @param:Json(name = "status") val status: Int? = 0,
+    @param:Json(name = "code") val code: String? = null,
+    @param:Json(name = "status_verbose") val statusVerbose: String? = null,
+    @param:Json(name = "product") val product: ProductDto? = null
 )
 
 @JsonClass(generateAdapter = true)
 data class ProductDto(
-    @Json(name = "code") val code: String? = null,
-    @Json(name = "product_name") val productName: String? = null,
-    @Json(name = "product_name_en") val productNameEn: String? = null,
-    @Json(name = "brands") val brands: String? = null,
-    @Json(name = "image_url") val imageUrl: String? = null,
-    @Json(name = "image_front_url") val imageFrontUrl: String? = null,
-    @Json(name = "image_front_small_url") val imageFrontSmallUrl: String? = null,
-    @Json(name = "nutriscore_grade") val nutriscoreGrade: String? = null,
-    @Json(name = "nova_group") val novaGroup: Int? = null,
-    @Json(name = "ecoscore_grade") val ecoscoreGrade: String? = null,
-    @Json(name = "ingredients_text") val ingredientsText: String? = null,
-    @Json(name = "ingredients_text_en") val ingredientsTextEn: String? = null,
-    @Json(name = "additives_tags") val additivesTags: List<String>? = null,
-    @Json(name = "additives_original_tags") val additivesOriginalTags: List<String>? = null,
-    @Json(name = "allergens_tags") val allergensTags: List<String>? = null,
-    @Json(name = "allergens_hierarchy") val allergensHierarchy: List<String>? = null,
-    @Json(name = "traces_tags") val tracesTags: List<String>? = null,
-    @Json(name = "ingredients_analysis_tags") val ingredientsAnalysisTags: List<String>? = null,
-    @Json(name = "quantity") val quantity: String? = null,
-    @Json(name = "serving_size") val servingSize: String? = null,
-    @Json(name = "nutriments") val nutriments: NutrimentsDto? = null
+    @param:Json(name = "code") val code: String? = null,
+    @param:Json(name = "product_name") val productName: String? = null,
+    @param:Json(name = "product_name_en") val productNameEn: String? = null,
+    @param:Json(name = "brands") val brands: String? = null,
+    @param:Json(name = "image_url") val imageUrl: String? = null,
+    @param:Json(name = "image_front_url") val imageFrontUrl: String? = null,
+    @param:Json(name = "image_front_small_url") val imageFrontSmallUrl: String? = null,
+    @param:Json(name = "nutriscore_grade") val nutriscoreGrade: String? = null,
+    @param:Json(name = "nova_group") val novaGroup: Int? = null,
+    @param:Json(name = "ecoscore_grade") val ecoscoreGrade: String? = null,
+    @param:Json(name = "ingredients_text") val ingredientsText: String? = null,
+    @param:Json(name = "ingredients_text_en") val ingredientsTextEn: String? = null,
+    @param:Json(name = "additives_tags") val additivesTags: List<String>? = null,
+    @param:Json(name = "additives_original_tags") val additivesOriginalTags: List<String>? = null,
+    @param:Json(name = "allergens_tags") val allergensTags: List<String>? = null,
+    @param:Json(name = "allergens_hierarchy") val allergensHierarchy: List<String>? = null,
+    @param:Json(name = "traces_tags") val tracesTags: List<String>? = null,
+    @param:Json(name = "ingredients_analysis_tags") val ingredientsAnalysisTags: List<String>? = null,
+    @param:Json(name = "quantity") val quantity: String? = null,
+    @param:Json(name = "serving_size") val servingSize: String? = null,
+    @param:Json(name = "nutriments") val nutriments: NutrimentsDto? = null
 )
 
 @JsonClass(generateAdapter = true)
 data class NutrimentsDto(
-    @Json(name = "energy-kcal_100g") val energyKcal100g: Double? = null,
-    @Json(name = "energy_100g") val energy100g: Double? = null,
-    @Json(name = "fat_100g") val fat100g: Double? = null,
-    @Json(name = "saturated-fat_100g") val saturatedFat100g: Double? = null,
-    @Json(name = "carbohydrates_100g") val carbohydrates100g: Double? = null,
-    @Json(name = "sugars_100g") val sugars100g: Double? = null,
-    @Json(name = "fiber_100g") val fiber100g: Double? = null,
-    @Json(name = "proteins_100g") val proteins100g: Double? = null,
-    @Json(name = "salt_100g") val salt100g: Double? = null,
-    @Json(name = "sodium_100g") val sodium100g: Double? = null
+    @param:Json(name = "energy-kcal_100g") val energyKcal100g: Double? = null,
+    @param:Json(name = "energy_100g") val energy100g: Double? = null,
+    @param:Json(name = "fat_100g") val fat100g: Double? = null,
+    @param:Json(name = "saturated-fat_100g") val saturatedFat100g: Double? = null,
+    @param:Json(name = "carbohydrates_100g") val carbohydrates100g: Double? = null,
+    @param:Json(name = "sugars_100g") val sugars100g: Double? = null,
+    @param:Json(name = "fiber_100g") val fiber100g: Double? = null,
+    @param:Json(name = "proteins_100g") val proteins100g: Double? = null,
+    @param:Json(name = "salt_100g") val salt100g: Double? = null,
+    @param:Json(name = "sodium_100g") val sodium100g: Double? = null
 )
 
 /**

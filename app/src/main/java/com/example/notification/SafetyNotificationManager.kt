@@ -70,7 +70,7 @@ object SafetyNotificationManager {
         val bodyText = "${primaryWarning.title}: ${primaryWarning.message}"
 
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(R.mipmap.ic_launcher)
+            .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(title)
             .setContentText(bodyText)
             .setStyle(NotificationCompat.BigTextStyle().bigText(context.getString(R.string.notification_big_text, product.brand, bodyText)))

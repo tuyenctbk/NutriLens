@@ -94,7 +94,20 @@ class NutriLensViewModel(application: Application) : AndroidViewModel(applicatio
             initialValue = emptyList()
         )
 
+    private val backStack = mutableListOf<ScreenDestination>(ScreenDestination.Scanner)
+
     fun navigateTo(destination: ScreenDestination) {
+        if (destination is ScreenDestination.ProductDetail) {
+            if (backStack.lastOrNull() != destination) {
+                backStack.add(destination)
+            }
+        } else {
+            backStack.clear()
+            backStack.add(ScreenDestination.Scanner)
+            if (destination !is ScreenDestination.Scanner) {
+                backStack.add(destination)
+            }
+        }
         _uiState.value = _uiState.value.copy(
             currentDestination = destination,
             errorMessage = null
@@ -102,10 +115,19 @@ class NutriLensViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     fun navigateBack() {
-        _uiState.value = _uiState.value.copy(
-            currentDestination = ScreenDestination.Scanner,
-            errorMessage = null
-        )
+        if (backStack.size > 1) {
+            backStack.removeAt(backStack.lastIndex)
+            val previous = backStack.last()
+            _uiState.value = _uiState.value.copy(
+                currentDestination = previous,
+                errorMessage = null
+            )
+        } else {
+            _uiState.value = _uiState.value.copy(
+                currentDestination = ScreenDestination.Scanner,
+                errorMessage = null
+            )
+        }
     }
 
     fun toggleTorch() {
@@ -131,10 +153,15 @@ class NutriLensViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     fun loadProduct(barcode: String, forceRefresh: Boolean = false) {
+        val detailDest = ScreenDestination.ProductDetail(barcode)
+        if (backStack.lastOrNull() != detailDest) {
+            backStack.add(detailDest)
+        }
+
         _uiState.value = _uiState.value.copy(
             isLoading = true,
             errorMessage = null,
-            currentDestination = ScreenDestination.ProductDetail(barcode)
+            currentDestination = detailDest
         )
 
         viewModelScope.launch {

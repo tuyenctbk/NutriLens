@@ -1,5 +1,12 @@
 package com.example.ui.screens
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.remember
+import androidx.compose.ui.draw.scale
+import kotlinx.coroutines.launch
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -96,6 +103,9 @@ fun ProductDetailScreen(
         onBack()
     }
 
+    val coroutineScope = rememberCoroutineScope()
+    val favScale = remember { Animatable(1f) }
+
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
@@ -125,13 +135,20 @@ fun ProductDetailScreen(
                             Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.refresh_cd))
                         }
                         IconButton(
-                            onClick = { onToggleFavorite(product) },
+                            onClick = {
+                                coroutineScope.launch {
+                                    favScale.animateTo(1.35f, spring(stiffness = Spring.StiffnessHigh))
+                                    favScale.animateTo(1f, spring(dampingRatio = 0.5f, stiffness = Spring.StiffnessMediumLow))
+                                }
+                                onToggleFavorite(product)
+                            },
                             modifier = Modifier.testTag("favorite_button")
                         ) {
                             Icon(
                                 imageVector = if (product.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                                 contentDescription = stringResource(R.string.favorite_cd),
-                                tint = if (product.isFavorite) Color(0xFFE91E63) else MaterialTheme.colorScheme.onSurface
+                                tint = if (product.isFavorite) Color(0xFFE91E63) else MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.scale(favScale.value)
                             )
                         }
                     }

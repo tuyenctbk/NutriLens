@@ -44,13 +44,17 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.ClipOp
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
@@ -72,6 +76,7 @@ fun BarcodeScannerView(
     var lastScannedBarcode by remember { mutableStateOf<String?>(null) }
     var lastScannedTimestamp by remember { mutableStateOf(0L) }
 
+    val haptic = LocalHapticFeedback.current
     val cameraExecutor = remember { Executors.newSingleThreadExecutor() }
 
     LaunchedEffect(isTorchEnabled, camera) {
@@ -131,6 +136,7 @@ fun BarcodeScannerView(
                                     if (rawBarcode != lastScannedBarcode || now - lastScannedTimestamp > 1500) {
                                         lastScannedBarcode = rawBarcode
                                         lastScannedTimestamp = now
+                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                         onBarcodeDetected(rawBarcode)
                                     }
                                 }
@@ -193,29 +199,38 @@ private fun processImageProxy(
 
 @Composable
 fun ScannerOverlay(modifier: Modifier = Modifier) {
-    val infiniteTransition = rememberInfiniteTransition(label = "laser")
+    val infiniteTransition = rememberInfiniteTransition(label = "scanner_overlay_anim")
     val laserProgress by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
+        initialValue = 0.05f,
+        targetValue = 0.95f,
         animationSpec = infiniteRepeatable(
-            animation = tween(2000, easing = FastOutSlowInEasing),
+            animation = tween(1800, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
         ),
-        label = "laser"
+        label = "laser_progress"
+    )
+    val bracketPulseAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.65f,
+        targetValue = 1.0f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1200, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "bracket_pulse"
     )
 
     BoxWithConstraints(
         modifier = modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
-        val boxWidth = maxWidth * 0.75f
-        val boxHeight = 220.dp
+        val boxWidth = maxWidth * 0.78f
+        val boxHeight = 230.dp
 
         val density = LocalDensity.current
         val widthPx = with(density) { boxWidth.toPx() }
         val heightPx = with(density) { boxHeight.toPx() }
 
-        // Semi-transparent darkened background with cutout for scanner window
+        // Semi-transparent darkened background with rounded cutout
         Canvas(modifier = Modifier.fillMaxSize()) {
             val canvasWidth = size.width
             val canvasHeight = size.height
@@ -236,24 +251,125 @@ fun ScannerOverlay(modifier: Modifier = Modifier) {
             }
 
             clipPath(cutoutPath, clipOp = ClipOp.Difference) {
-                drawRect(Color.Black.copy(alpha = 0.55f))
+                drawRect(Color.Black.copy(alpha = 0.62f))
             }
         }
 
-        // Viewfinder frame and laser
+        // Viewfinder frame and high-tech corner brackets
         Box(
             modifier = Modifier
                 .size(boxWidth, boxHeight)
-                .border(2.dp, Color.White.copy(alpha = 0.7f), RoundedCornerShape(16.dp))
+                .border(
+                    width = 1.dp,
+                    color = Color(0xFF34D399).copy(alpha = 0.25f),
+                    shape = RoundedCornerShape(20.dp)
+                )
         ) {
-            // Animated laser line
+            // High-tech Corner Brackets Canvas
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                val bracketLen = 28.dp.toPx()
+                val strokeW = 3.5.dp.toPx()
+                val cornerRadius = 16.dp.toPx()
+                val bracketColor = Color(0xFF34D399).copy(alpha = bracketPulseAlpha)
+
+                // Top-Left
+                drawPath(
+                    path = Path().apply {
+                        moveTo(0f, bracketLen)
+                        lineTo(0f, cornerRadius)
+                        quadraticTo(0f, 0f, cornerRadius, 0f)
+                        lineTo(bracketLen, 0f)
+                    },
+                    color = bracketColor,
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(
+                        width = strokeW,
+                        cap = StrokeCap.Round
+                    )
+                )
+
+                // Top-Right
+                drawPath(
+                    path = Path().apply {
+                        moveTo(size.width - bracketLen, 0f)
+                        lineTo(size.width - cornerRadius, 0f)
+                        quadraticTo(size.width, 0f, size.width, cornerRadius)
+                        lineTo(size.width, bracketLen)
+                    },
+                    color = bracketColor,
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(
+                        width = strokeW,
+                        cap = StrokeCap.Round
+                    )
+                )
+
+                // Bottom-Left
+                drawPath(
+                    path = Path().apply {
+                        moveTo(0f, size.height - bracketLen)
+                        lineTo(0f, size.height - cornerRadius)
+                        quadraticTo(0f, size.height, cornerRadius, size.height)
+                        lineTo(bracketLen, size.height)
+                    },
+                    color = bracketColor,
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(
+                        width = strokeW,
+                        cap = StrokeCap.Round
+                    )
+                )
+
+                // Bottom-Right
+                drawPath(
+                    path = Path().apply {
+                        moveTo(size.width - bracketLen, size.height)
+                        lineTo(size.width - cornerRadius, size.height)
+                        quadraticTo(size.width, size.height, size.width, size.height - cornerRadius)
+                        lineTo(size.width, size.height - bracketLen)
+                    },
+                    color = bracketColor,
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(
+                        width = strokeW,
+                        cap = StrokeCap.Round
+                    )
+                )
+            }
+
+            // Animated Laser Sweep Beam with Glowing Aura
             val laserY = boxHeight * laserProgress
+
+            // Trailing aura
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(3.dp)
+                    .height(28.dp)
+                    .offset(y = laserY - 14.dp)
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                Color.Transparent,
+                                Color(0xFF10B981).copy(alpha = 0.28f),
+                                Color.Transparent
+                            )
+                        )
+                    )
+            )
+
+            // Sharp Core Laser line
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(2.5.dp)
                     .offset(y = laserY)
-                    .background(Color(0xFF4EFAA4))
+                    .background(
+                        Brush.horizontalGradient(
+                            colors = listOf(
+                                Color.Transparent,
+                                Color(0xFF34D399),
+                                Color.White,
+                                Color(0xFF34D399),
+                                Color.Transparent
+                            )
+                        )
+                    )
             )
         }
     }

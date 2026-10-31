@@ -114,12 +114,12 @@ fun DashboardScreen(
                 title = {
                     Column {
                         Text(
-                            text = "Nutritional Profile Dashboard",
+                            text = stringResource(R.string.dashboard_title),
                             fontWeight = FontWeight.Bold,
                             style = MaterialTheme.typography.titleMedium
                         )
                         Text(
-                            text = "Native Jetpack Compose Canvas Visualizations",
+                            text = stringResource(R.string.dashboard_subtitle),
                             style = MaterialTheme.typography.bodySmall,
                             fontSize = 11.sp,
                             color = MaterialTheme.colorScheme.primary
@@ -166,13 +166,13 @@ fun DashboardScreen(
                         }
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
-                            text = "No Scanned Food Data Available",
+                            text = stringResource(R.string.dashboard_empty_title),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "Scan grocery items or populate sample scans to visualize sugar, saturated fat, and salt levels relative to WHO daily recommended intake guidelines.",
+                            text = stringResource(R.string.dashboard_empty_desc),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             textAlign = TextAlign.Center
@@ -580,7 +580,7 @@ private fun MacroDonutChartCard(nutriments: NutrimentsInfo) {
                         fontSize = 16.sp
                     )
                     Text(
-                        text = "Macros",
+                        text = stringResource(R.string.macros),
                         fontSize = 11.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -592,21 +592,21 @@ private fun MacroDonutChartCard(nutriments: NutrimentsInfo) {
             // Legend
             Column(modifier = Modifier.weight(1f)) {
                 MacroLegendRow(
-                    label = "Carbohydrates",
+                    label = stringResource(R.string.macro_carbs),
                     valueGrams = carbs,
                     percentage = carbsPct,
                     color = carbColor
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 MacroLegendRow(
-                    label = "Total Fats",
+                    label = stringResource(R.string.macro_fats),
                     valueGrams = fat,
                     percentage = fatPct,
                     color = fatColor
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 MacroLegendRow(
-                    label = "Proteins",
+                    label = stringResource(R.string.macro_proteins),
                     valueGrams = protein,
                     percentage = proteinPct,
                     color = proteinColor
@@ -670,12 +670,12 @@ private fun HistoryQualityGaugeCard(products: List<Product>) {
             ) {
                 Column {
                     Text(
-                        text = "Clean / Minimal Foods",
+                        text = stringResource(R.string.clean_minimal_foods),
                         fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.bodyMedium
                     )
                     Text(
-                        text = "$cleanCount of $total products (NOVA 1-2)",
+                        text = stringResource(R.string.history_products_ratio_nova, cleanCount, total, "1-2"),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -697,12 +697,12 @@ private fun HistoryQualityGaugeCard(products: List<Product>) {
             ) {
                 Column {
                     Text(
-                        text = "Ultra-Processed Foods",
+                        text = stringResource(R.string.ultra_processed_foods),
                         fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.bodyMedium
                     )
                     Text(
-                        text = "$nova4Count of $total products (NOVA 4)",
+                        text = stringResource(R.string.history_products_ratio_nova, nova4Count, total, "4"),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

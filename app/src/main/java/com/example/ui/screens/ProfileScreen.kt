@@ -116,12 +116,12 @@ fun ProfileScreen(
                 title = {
                     Column {
                         Text(
-                            text = "Dietary & Allergen Settings",
+                            text = stringResource(R.string.settings_title),
                             fontWeight = FontWeight.Bold,
                             style = MaterialTheme.typography.titleMedium
                         )
                         Text(
-                            text = "Saved automatically to Jetpack DataStore",
+                            text = stringResource(R.string.settings_subtitle),
                             style = MaterialTheme.typography.bodySmall,
                             fontSize = 11.sp,
                             color = MaterialTheme.colorScheme.primary
@@ -160,14 +160,14 @@ fun ProfileScreen(
                     Spacer(modifier = Modifier.width(12.dp))
                     Column {
                         Text(
-                            text = "Personalized Food Safety Profile",
+                            text = stringResource(R.string.settings_title),
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
-                            text = "Define your allergies and dietary restrictions. NutriLens automatically evaluates every scanned product against these saved preferences.",
+                            text = stringResource(R.string.settings_intro),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -179,14 +179,14 @@ fun ProfileScreen(
 
             // Section 1: Monitored Allergies
             Text(
-                text = "1. Food Allergies & Sensitivities",
+                text = stringResource(R.string.allergies_title),
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "Tap any allergen to enable/disable monitoring:",
+                text = stringResource(R.string.allergies_subtitle),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -204,7 +204,6 @@ fun ProfileScreen(
                         onClick = {
                             val newSelected = !isSelected
                             onToggleAllergen(allergenName, newSelected)
-                            notifySaved("${if (newSelected) "Added" else "Removed"} $allergenName allergy")
                         },
                         label = {
                             Text(
@@ -236,7 +235,7 @@ fun ProfileScreen(
 
             // Section 2: Dietary Lifestyle Restrictions
             Text(
-                text = "2. Dietary Restrictions & Lifestyles",
+                text = stringResource(R.string.lifestyle_title),
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
@@ -250,34 +249,31 @@ fun ProfileScreen(
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     PreferenceSwitchRow(
-                        title = "Gluten-Free Diet",
-                        description = "Strictly flag wheat, barley, rye, spelt, oats, or gluten traces",
+                        title = stringResource(R.string.gluten_free_title),
+                        description = stringResource(R.string.gluten_free_desc),
                         checked = userProfile.isGlutenFree,
                         onCheckedChange = { checked ->
                             onSetGlutenFree(checked)
-                            notifySaved("Gluten-Free setting updated in DataStore")
                         },
                         testTag = "switch_gluten_free"
                     )
                     HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
                     PreferenceSwitchRow(
-                        title = "Vegan Diet",
-                        description = "Flag dairy, eggs, honey, gelatin, or animal derivatives",
+                        title = stringResource(R.string.vegan_title),
+                        description = stringResource(R.string.vegan_desc),
                         checked = userProfile.isVegan,
                         onCheckedChange = { checked ->
                             onSetVegan(checked)
-                            notifySaved("Vegan setting updated in DataStore")
                         },
                         testTag = "switch_vegan"
                     )
                     HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
                     PreferenceSwitchRow(
-                        title = "Vegetarian Diet",
-                        description = "Flag meat, poultry, fish, gelatin, or animal rennet",
+                        title = stringResource(R.string.vegetarian_title),
+                        description = stringResource(R.string.vegetarian_desc),
                         checked = userProfile.isVegetarian,
                         onCheckedChange = { checked ->
                             onSetVegetarian(checked)
-                            notifySaved("Vegetarian setting updated in DataStore")
                         },
                         testTag = "switch_vegetarian"
                     )
@@ -288,14 +284,14 @@ fun ProfileScreen(
 
             // Section 3: Custom Avoid Keywords
             Text(
-                text = "3. Custom Ingredients Avoid List",
+                text = stringResource(R.string.custom_avoid_title),
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "Add custom ingredient terms to flag (e.g. MSG, Caffeine, Red 40, Corn Syrup):",
+                text = stringResource(R.string.custom_avoid_subtitle),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -387,7 +383,7 @@ fun ProfileScreen(
 
             // Section 4: Health & Processing Guidelines
             Text(
-                text = "4. Ingredient Processing Guidelines",
+                text = stringResource(R.string.processing_title),
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
@@ -401,34 +397,31 @@ fun ProfileScreen(
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     PreferenceSwitchRow(
-                        title = "Avoid Palm Oil",
-                        description = "Flag palm oil, palm kernel, and palmolein fractions",
+                        title = stringResource(R.string.avoid_palm_oil_title),
+                        description = stringResource(R.string.avoid_palm_oil_desc),
                         checked = userProfile.avoidPalmOil,
                         onCheckedChange = { checked ->
                             onSetAvoidPalmOil(checked)
-                            notifySaved("Palm Oil setting saved")
                         },
                         testTag = "switch_palm_oil"
                     )
                     HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
                     PreferenceSwitchRow(
-                        title = "NOVA 4 Ultra-Processed Alert",
-                        description = "Warn when a product is classified as ultra-processed",
+                        title = stringResource(R.string.avoid_nova4_title),
+                        description = stringResource(R.string.avoid_nova4_desc),
                         checked = userProfile.avoidNova4UltraProcessed,
                         onCheckedChange = { checked ->
                             onSetAvoidNova4(checked)
-                            notifySaved("NOVA 4 setting saved")
                         },
                         testTag = "switch_nova_4"
                     )
                     HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
                     PreferenceSwitchRow(
-                        title = "Avoid High-Risk Additives",
-                        description = "Flag artificial dyes, nitrites (E249-E252), aspartame (E951), BHA/BHT",
+                        title = stringResource(R.string.avoid_additives_title),
+                        description = stringResource(R.string.avoid_additives_desc),
                         checked = userProfile.avoidHighRiskAdditives,
                         onCheckedChange = { checked ->
                             onSetAvoidHighRiskAdditives(checked)
-                            notifySaved("High-risk additives setting saved")
                         },
                         testTag = "switch_additives"
                     )

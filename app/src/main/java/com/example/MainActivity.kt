@@ -6,14 +6,26 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
+import androidx.compose.ui.draw.alpha
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -24,6 +36,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
@@ -270,9 +283,21 @@ fun NutriLensApp(viewModel: NutriLensViewModel) {
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            Crossfade(
+            AnimatedContent(
                 targetState = uiState.currentDestination,
-                label = "screen_transition"
+                transitionSpec = {
+                    if (targetState is ScreenDestination.ProductDetail) {
+                        (slideInHorizontally(tween(300, easing = FastOutSlowInEasing)) { width -> width / 3 } + fadeIn(tween(250)))
+                            .togetherWith(slideOutHorizontally(tween(250, easing = FastOutSlowInEasing)) { width -> -width / 4 } + fadeOut(tween(200)))
+                    } else if (initialState is ScreenDestination.ProductDetail) {
+                        (slideInHorizontally(tween(300, easing = FastOutSlowInEasing)) { width -> -width / 4 } + fadeIn(tween(250)))
+                            .togetherWith(slideOutHorizontally(tween(250, easing = FastOutSlowInEasing)) { width -> width / 3 } + fadeOut(tween(200)))
+                    } else {
+                        (fadeIn(tween(220)) + scaleIn(initialScale = 0.96f, animationSpec = tween(220)))
+                            .togetherWith(fadeOut(tween(180)))
+                    }
+                },
+                label = "screen_navigation_transition"
             ) { destination ->
                 when (destination) {
                     is ScreenDestination.Scanner -> {
@@ -382,7 +407,8 @@ fun NutriLensApp(viewModel: NutriLensViewModel) {
 
         AnimatedVisibility(
             visible = showSplash,
-            exit = fadeOut(animationSpec = tween(400))
+            exit = fadeOut(animationSpec = tween(450, easing = FastOutSlowInEasing)) +
+                   scaleOut(targetScale = 1.08f, animationSpec = tween(450, easing = FastOutSlowInEasing))
         ) {
             NutriLensSplashScreen(
                 onDismiss = { showSplash = false }
@@ -396,24 +422,54 @@ fun NutriLensSplashScreen(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val infiniteTransition = rememberInfiniteTransition(label = "splash_anim")
+    val introScale = remember { Animatable(0.72f) }
+    val introAlpha = remember { Animatable(0f) }
+
+    LaunchedEffect(Unit) {
+        launch {
+            introScale.animateTo(
+                targetValue = 1f,
+                animationSpec = spring(
+                    dampingRatio = 0.65f,
+                    stiffness = Spring.StiffnessMediumLow
+                )
+            )
+        }
+        launch {
+            introAlpha.animateTo(
+                targetValue = 1f,
+                animationSpec = tween(400)
+            )
+        }
+    }
+
+    val infiniteTransition = rememberInfiniteTransition(label = "splash_infinite")
     val pulseScale by infiniteTransition.animateFloat(
-        initialValue = 0.96f,
-        targetValue = 1.04f,
+        initialValue = 0.98f,
+        targetValue = 1.05f,
         animationSpec = infiniteRepeatable(
-            animation = tween(900),
+            animation = tween(1200, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
         ),
         label = "pulse_scale"
     )
-    val beamOffset by infiniteTransition.animateFloat(
-        initialValue = 0.1f,
-        targetValue = 0.9f,
+    val ringAlpha1 by infiniteTransition.animateFloat(
+        initialValue = 0.25f,
+        targetValue = 0.05f,
         animationSpec = infiniteRepeatable(
-            animation = tween(1100),
+            animation = tween(1400, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
         ),
-        label = "beam_offset"
+        label = "ring_alpha_1"
+    )
+    val laserYFraction by infiniteTransition.animateFloat(
+        initialValue = 0.15f,
+        targetValue = 0.85f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1000, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "laser_y"
     )
 
     Box(
@@ -422,9 +478,9 @@ fun NutriLensSplashScreen(
             .background(
                 Brush.verticalGradient(
                     colors = listOf(
-                        Color(0xFF0F172A),
+                        Color(0xFF022C22),
                         Color(0xFF064E3B),
-                        Color(0xFF022C22)
+                        Color(0xFF0F172A)
                     )
                 )
             )
@@ -438,23 +494,41 @@ fun NutriLensSplashScreen(
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
-            modifier = Modifier.padding(32.dp)
+            modifier = Modifier
+                .padding(32.dp)
+                .scale(introScale.value)
+                .alpha(introAlpha.value)
         ) {
+            // High-Tech Scanner Core with Concentric Glow Waves
             Box(
                 contentAlignment = Alignment.Center,
-                modifier = Modifier
-                    .size(124.dp)
-                    .scale(pulseScale)
-                    .clip(CircleShape)
-                    .background(Color(0xFF10B981).copy(alpha = 0.2f))
+                modifier = Modifier.size(150.dp)
             ) {
+                // Expanding Ripple Halo 1
+                Box(
+                    modifier = Modifier
+                        .size(144.dp)
+                        .scale(pulseScale)
+                        .clip(CircleShape)
+                        .background(Color(0xFF34D399).copy(alpha = ringAlpha1))
+                )
+
+                // Expanding Ripple Halo 2
+                Box(
+                    modifier = Modifier
+                        .size(122.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFF10B981).copy(alpha = 0.22f))
+                )
+
+                // Center Icon Disc
                 Box(
                     modifier = Modifier
                         .size(96.dp)
                         .clip(CircleShape)
                         .background(
                             Brush.radialGradient(
-                                colors = listOf(Color(0xFF10B981), Color(0xFF059669))
+                                colors = listOf(Color(0xFF34D399), Color(0xFF059669), Color(0xFF064E3B))
                             )
                         ),
                     contentAlignment = Alignment.Center
@@ -465,42 +539,52 @@ fun NutriLensSplashScreen(
                         tint = Color.White,
                         modifier = Modifier.size(52.dp)
                     )
-                }
 
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 14.dp)
-                ) {
+                    // Animated horizontal laser sweep
                     Box(
                         modifier = Modifier
-                            .fillMaxSize(fraction = beamOffset)
+                            .fillMaxSize()
+                            .padding(horizontal = 14.dp)
                     ) {
                         Box(
                             modifier = Modifier
-                                .align(Alignment.BottomCenter)
-                                .height(3.dp)
-                                .width(72.dp)
-                                .clip(RoundedCornerShape(2.dp))
-                                .background(Color(0xFF34D399))
-                        )
+                                .fillMaxSize(fraction = laserYFraction)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .align(Alignment.BottomCenter)
+                                    .height(3.dp)
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(2.dp))
+                                    .background(
+                                        Brush.horizontalGradient(
+                                            listOf(
+                                                Color.Transparent,
+                                                Color.White,
+                                                Color(0xFF6EE7B7),
+                                                Color.Transparent
+                                            )
+                                        )
+                                    )
+                            )
+                        }
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(28.dp))
+            Spacer(modifier = Modifier.height(32.dp))
 
             Text(
                 text = stringResource(R.string.app_name),
                 style = MaterialTheme.typography.headlineLarge.copy(
                     fontWeight = FontWeight.ExtraBold,
-                    letterSpacing = 1.5.sp
+                    letterSpacing = 2.sp
                 ),
                 color = Color.White,
                 textAlign = TextAlign.Center
             )
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             Text(
                 text = stringResource(R.string.splash_tagline),
@@ -511,27 +595,28 @@ fun NutriLensSplashScreen(
                 textAlign = TextAlign.Center
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(28.dp))
 
             Surface(
-                color = Color.White.copy(alpha = 0.12f),
-                shape = RoundedCornerShape(16.dp)
+                color = Color.White.copy(alpha = 0.14f),
+                shape = RoundedCornerShape(20.dp)
             ) {
                 Row(
-                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Box(
                         modifier = Modifier
                             .size(8.dp)
                             .clip(CircleShape)
-                            .background(Color(0xFF10B981))
+                            .background(Color(0xFF34D399))
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(10.dp))
                     Text(
                         text = stringResource(R.string.splash_technologies),
                         style = MaterialTheme.typography.labelSmall,
-                        color = Color(0xFFD1FAE5)
+                        color = Color(0xFFD1FAE5),
+                        fontWeight = FontWeight.SemiBold
                     )
                 }
             }

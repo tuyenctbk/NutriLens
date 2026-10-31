@@ -1,10 +1,18 @@
 import com.google.gms.googleservices.GoogleServicesPlugin.MissingGoogleServicesStrategy
+import java.util.Properties
 
 plugins {
   alias(libs.plugins.android.application)
   alias(libs.plugins.kotlin.compose)
   alias(libs.plugins.google.devtools.ksp)
   alias(libs.plugins.secrets)
+}
+
+val localProperties = Properties().apply {
+  val localPropertiesFile = rootProject.file("local.properties")
+  if (localPropertiesFile.exists()) {
+    localPropertiesFile.inputStream().use { load(it) }
+  }
 }
 
 android {
@@ -25,11 +33,22 @@ android {
   // and updating Android apps in AI Studio.
   signingConfigs {
     create("release") {
-      val keystorePath = System.getenv("KEYSTORE_PATH") ?: "${rootDir}/my-upload-key.jks"
-      storeFile = file(keystorePath)
-      storePassword = System.getenv("STORE_PASSWORD")
-      keyAlias = "upload"
-      keyPassword = System.getenv("KEY_PASSWORD")
+      val releaseStoreFile = localProperties.getProperty("RELEASE_STORE_FILE")
+        ?: localProperties.getProperty("storeFile")
+        ?: "common_release_key.jks"
+      storeFile = rootProject.file(releaseStoreFile)
+      storePassword = localProperties.getProperty("RELEASE_STORE_PASSWORD")
+        ?: localProperties.getProperty("storePassword")
+        ?: System.getenv("RELEASE_STORE_PASSWORD")
+        ?: System.getenv("STORE_PASSWORD")
+      keyAlias = localProperties.getProperty("RELEASE_KEY_ALIAS")
+        ?: localProperties.getProperty("keyAlias")
+        ?: System.getenv("RELEASE_KEY_ALIAS")
+        ?: System.getenv("KEY_ALIAS")
+      keyPassword = localProperties.getProperty("RELEASE_KEY_PASSWORD")
+        ?: localProperties.getProperty("keyPassword")
+        ?: System.getenv("RELEASE_KEY_PASSWORD")
+        ?: System.getenv("KEY_PASSWORD")
     }
     create("debugConfig") {
       storeFile = file("${rootDir}/debug.keystore")

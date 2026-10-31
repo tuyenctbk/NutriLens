@@ -53,12 +53,13 @@ import com.example.ui.theme.NutriScoreE
 
 @Composable
 fun NutriScoreCard(grade: String?, modifier: Modifier = Modifier) {
+    var showDialog by remember { mutableStateOf(false) }
     val cleanGrade = grade?.lowercase()
     val letters = listOf("a", "b", "c", "d", "e")
     val colors = listOf(NutriScoreA, NutriScoreB, NutriScoreC, NutriScoreD, NutriScoreE)
 
     Surface(
-        modifier = modifier,
+        modifier = modifier.clickable { showDialog = true },
         shape = RoundedCornerShape(16.dp),
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
         tonalElevation = 1.dp
@@ -67,12 +68,21 @@ fun NutriScoreCard(grade: String?, modifier: Modifier = Modifier) {
             modifier = Modifier.padding(12.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
-                text = stringResource(R.string.nutri_score),
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = stringResource(R.string.nutri_score),
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Icon(
+                    imageVector = Icons.Default.Info,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                    modifier = Modifier.size(12.dp)
+                )
+            }
             Spacer(modifier = Modifier.height(8.dp))
 
             if (cleanGrade != null && cleanGrade in letters) {
@@ -124,10 +134,49 @@ fun NutriScoreCard(grade: String?, modifier: Modifier = Modifier) {
             }
         }
     }
+
+    if (showDialog) {
+        AlertDialog(
+            onDismissRequest = { showDialog = false },
+            icon = {
+                Icon(
+                    imageVector = Icons.Default.Info,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            },
+            title = {
+                Text(
+                    text = stringResource(R.string.nutri_score),
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Column {
+                    Text(
+                        text = "Nutri-Score evaluates 100g of food by balancing negative points (energy, sugars, saturated fat, sodium) against positive points (fiber, protein, fruit, vegetable & nut content).",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Text(
+                        text = "• Grade A (Green): Highest nutritional balance\n• Grade B (Light Green): Good nutritional balance\n• Grade C (Yellow): Balanced nutrition\n• Grade D (Orange): High in sugar, fat, or salt\n• Grade E (Red): Poor nutritional quality; consume in moderation",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showDialog = false }) {
+                    Text(stringResource(R.string.close))
+                }
+            }
+        )
+    }
 }
 
 @Composable
 fun NovaGroupCard(group: Int?, modifier: Modifier = Modifier) {
+    var showDialog by remember { mutableStateOf(false) }
     val (color, title, subtitle) = when (group) {
         1 -> Triple(Nova1, stringResource(R.string.group_1_title), stringResource(R.string.unprocessed_minimal))
         2 -> Triple(Nova2, stringResource(R.string.group_2_title), stringResource(R.string.processed_culinary))
@@ -137,7 +186,7 @@ fun NovaGroupCard(group: Int?, modifier: Modifier = Modifier) {
     }
 
     Surface(
-        modifier = modifier,
+        modifier = modifier.clickable { showDialog = true },
         shape = RoundedCornerShape(16.dp),
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
         tonalElevation = 1.dp
@@ -146,12 +195,21 @@ fun NovaGroupCard(group: Int?, modifier: Modifier = Modifier) {
             modifier = Modifier.padding(12.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
-                text = stringResource(R.string.nova_classification),
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = stringResource(R.string.nova_classification),
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Icon(
+                    imageVector = Icons.Default.Info,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                    modifier = Modifier.size(12.dp)
+                )
+            }
             Spacer(modifier = Modifier.height(8.dp))
 
             Row(
@@ -190,10 +248,49 @@ fun NovaGroupCard(group: Int?, modifier: Modifier = Modifier) {
             }
         }
     }
+
+    if (showDialog) {
+        AlertDialog(
+            onDismissRequest = { showDialog = false },
+            icon = {
+                Icon(
+                    imageVector = Icons.Default.Info,
+                    contentDescription = null,
+                    tint = color
+                )
+            },
+            title = {
+                Text(
+                    text = stringResource(R.string.nova_classification),
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Column {
+                    Text(
+                        text = "The NOVA classification categorizes food by the extent and purpose of industrial food processing (developed by the University of São Paulo, Brazil):",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Text(
+                        text = "• NOVA 1: Unprocessed or minimally processed foods (whole plants, seeds, eggs, meat, milk)\n• NOVA 2: Processed culinary ingredients (oils, butter, sugar, salt)\n• NOVA 3: Processed foods (canned vegetables, cheese, cured meats, artisan breads)\n• NOVA 4: Ultra-processed food products (industrial formulations with colorings, flavor enhancers, high-fructose syrups, and emulsifiers)",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showDialog = false }) {
+                    Text(stringResource(R.string.close))
+                }
+            }
+        )
+    }
 }
 
 @Composable
 fun EcoScoreCard(grade: String?, modifier: Modifier = Modifier) {
+    var showDialog by remember { mutableStateOf(false) }
     val cleanGrade = grade?.lowercase()
     val (color, desc) = when (cleanGrade) {
         "a" -> Pair(NutriScoreA, stringResource(R.string.very_low_eco_impact))
@@ -205,7 +302,7 @@ fun EcoScoreCard(grade: String?, modifier: Modifier = Modifier) {
     }
 
     Surface(
-        modifier = modifier,
+        modifier = modifier.clickable { showDialog = true },
         shape = RoundedCornerShape(16.dp),
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
         tonalElevation = 1.dp
@@ -214,12 +311,21 @@ fun EcoScoreCard(grade: String?, modifier: Modifier = Modifier) {
             modifier = Modifier.padding(12.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
-                text = stringResource(R.string.eco_score),
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = stringResource(R.string.eco_score),
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Icon(
+                    imageVector = Icons.Default.Info,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                    modifier = Modifier.size(12.dp)
+                )
+            }
             Spacer(modifier = Modifier.height(8.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
@@ -244,6 +350,44 @@ fun EcoScoreCard(grade: String?, modifier: Modifier = Modifier) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
+    }
+
+    if (showDialog) {
+        AlertDialog(
+            onDismissRequest = { showDialog = false },
+            icon = {
+                Icon(
+                    imageVector = Icons.Default.Eco,
+                    contentDescription = null,
+                    tint = color
+                )
+            },
+            title = {
+                Text(
+                    text = stringResource(R.string.eco_score),
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Column {
+                    Text(
+                        text = "Eco-Score measures the environmental footprint of food products using Agribalyse life cycle analysis (carbon, water, land use, ecotoxicity) plus bonuses and penalties for packaging recyclability and organic farming labels.",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Text(
+                        text = "• Grade A: Very low environmental impact\n• Grade B: Low environmental impact\n• Grade C: Moderate impact\n• Grade D: High impact\n• Grade E: Very high environmental impact",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showDialog = false }) {
+                    Text(stringResource(R.string.close))
+                }
+            }
+        )
     }
 }
 
