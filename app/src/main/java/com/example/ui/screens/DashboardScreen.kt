@@ -10,6 +10,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -279,60 +280,130 @@ fun DashboardScreen(
 
                     Spacer(modifier = Modifier.height(20.dp))
 
-                    // Visualization 1: Daily Recommended Intake Progress Bar Gauges
-                    Text(
-                        text = stringResource(R.string.daily_intake_title),
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = stringResource(R.string.daily_intake_subtitle),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
+                    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+                        val isWide = maxWidth >= 720.dp
+                        if (isWide) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(20.dp),
+                                verticalAlignment = Alignment.Top
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    // Visualization 1: Daily Recommended Intake Progress Bar Gauges
+                                    Text(
+                                        text = stringResource(R.string.daily_intake_title),
+                                        style = MaterialTheme.typography.titleSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = stringResource(R.string.daily_intake_subtitle),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Spacer(modifier = Modifier.height(12.dp))
 
-                    DailyValuesGaugeCard(nutriments = activeProduct.nutriments)
+                                    DailyValuesGaugeCard(nutriments = activeProduct.nutriments)
+                                }
 
-                    Spacer(modifier = Modifier.height(24.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    // Visualization 2: Native Compose Canvas Donut Chart for Macronutrients Ratio
+                                    Text(
+                                        text = stringResource(R.string.macro_composition_title),
+                                        style = MaterialTheme.typography.titleSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = stringResource(R.string.macro_composition_subtitle),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Spacer(modifier = Modifier.height(12.dp))
 
-                    // Visualization 2: Native Compose Canvas Donut Chart for Macronutrients Ratio
-                    Text(
-                        text = stringResource(R.string.macro_composition_title),
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = stringResource(R.string.macro_composition_subtitle),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
+                                    MacroDonutChartCard(nutriments = activeProduct.nutriments)
 
-                    MacroDonutChartCard(nutriments = activeProduct.nutriments)
+                                    Spacer(modifier = Modifier.height(20.dp))
 
-                    Spacer(modifier = Modifier.height(24.dp))
+                                    // Visualization 3: Overall Scan History Health Distribution
+                                    Text(
+                                        text = stringResource(R.string.history_quality_title),
+                                        style = MaterialTheme.typography.titleSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = stringResource(R.string.history_quality_subtitle),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Spacer(modifier = Modifier.height(12.dp))
 
-                    // Visualization 3: Overall Scan History Health Distribution
-                    Text(
-                        text = stringResource(R.string.history_quality_title),
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = stringResource(R.string.history_quality_subtitle),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
+                                    HistoryQualityGaugeCard(products = products)
+                                }
+                            }
+                        } else {
+                            Column(modifier = Modifier.fillMaxWidth()) {
+                                // Visualization 1: Daily Recommended Intake Progress Bar Gauges
+                                Text(
+                                    text = stringResource(R.string.daily_intake_title),
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = stringResource(R.string.daily_intake_subtitle),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Spacer(modifier = Modifier.height(12.dp))
 
-                    HistoryQualityGaugeCard(products = products)
+                                DailyValuesGaugeCard(nutriments = activeProduct.nutriments)
+
+                                Spacer(modifier = Modifier.height(24.dp))
+
+                                // Visualization 2: Native Compose Canvas Donut Chart for Macronutrients Ratio
+                                Text(
+                                    text = stringResource(R.string.macro_composition_title),
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = stringResource(R.string.macro_composition_subtitle),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Spacer(modifier = Modifier.height(12.dp))
+
+                                MacroDonutChartCard(nutriments = activeProduct.nutriments)
+
+                                Spacer(modifier = Modifier.height(24.dp))
+
+                                // Visualization 3: Overall Scan History Health Distribution
+                                Text(
+                                    text = stringResource(R.string.history_quality_title),
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = stringResource(R.string.history_quality_subtitle),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Spacer(modifier = Modifier.height(12.dp))
+
+                                HistoryQualityGaugeCard(products = products)
+                            }
+                        }
+                    }
                 }
             }
 
@@ -450,13 +521,18 @@ private fun DailyValueProgressBar(
                 text = label,
                 fontWeight = FontWeight.Bold,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false)
             )
+            Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = "${"%.1f".format(valueGrams)}g / ${maxGrams.toInt()}g ($pctInt% DV)",
+                text = "${"%.1f".format(valueGrams)}g / ${maxGrams.toInt()}g ($pctInt%)",
                 fontWeight = FontWeight.Bold,
                 fontSize = 12.sp,
-                color = barColor
+                color = barColor,
+                maxLines = 1
             )
         }
 
@@ -523,11 +599,11 @@ private fun MacroDonutChartCard(nutriments: NutrimentsInfo) {
         ) {
             // Native Donut Canvas
             Box(
-                modifier = Modifier.size(120.dp),
+                modifier = Modifier.size(100.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Canvas(modifier = Modifier.size(120.dp)) {
-                    val strokeWidth = 18.dp.toPx()
+                Canvas(modifier = Modifier.size(100.dp)) {
+                    val strokeWidth = 14.dp.toPx()
                     val diameter = size.minDimension - strokeWidth
                     val topLeft = Offset(strokeWidth / 2, strokeWidth / 2)
                     val arcSize = Size(diameter, diameter)
@@ -623,10 +699,13 @@ private fun MacroLegendRow(label: String, valueGrams: Double, percentage: Int, c
         horizontalArrangement = Arrangement.SpaceBetween,
         modifier = Modifier.fillMaxWidth()
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.weight(1f)
+        ) {
             Box(
                 modifier = Modifier
-                    .size(10.dp)
+                    .size(8.dp)
                     .clip(CircleShape)
                     .background(color)
             )
@@ -635,14 +714,18 @@ private fun MacroLegendRow(label: String, valueGrams: Double, percentage: Int, c
                 text = label,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onSurface
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
         }
+        Spacer(modifier = Modifier.width(6.dp))
         Text(
             text = "${"%.1f".format(valueGrams)}g ($percentage%)",
-            fontSize = 12.sp,
+            fontSize = 11.sp,
             fontWeight = FontWeight.Bold,
-            color = color
+            color = color,
+            maxLines = 1
         )
     }
 }
@@ -668,18 +751,23 @@ private fun HistoryQualityGaugeCard(products: List<Product>) {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = stringResource(R.string.clean_minimal_foods),
                         fontWeight = FontWeight.Bold,
-                        style = MaterialTheme.typography.bodyMedium
+                        style = MaterialTheme.typography.bodyMedium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                     Text(
                         text = stringResource(R.string.history_products_ratio_nova, cleanCount, total, "1-2"),
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
+                Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = "$cleanPct%",
                     fontWeight = FontWeight.Black,
@@ -695,18 +783,23 @@ private fun HistoryQualityGaugeCard(products: List<Product>) {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = stringResource(R.string.ultra_processed_foods),
                         fontWeight = FontWeight.Bold,
-                        style = MaterialTheme.typography.bodyMedium
+                        style = MaterialTheme.typography.bodyMedium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                     Text(
                         text = stringResource(R.string.history_products_ratio_nova, nova4Count, total, "4"),
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
+                Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = "$nova4Pct%",
                     fontWeight = FontWeight.Black,

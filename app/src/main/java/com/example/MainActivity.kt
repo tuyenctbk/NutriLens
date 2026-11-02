@@ -31,16 +31,19 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -61,9 +64,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationRail
+import androidx.compose.material3.NavigationRailItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -169,233 +175,369 @@ fun NutriLensApp(viewModel: NutriLensViewModel) {
 
     val isDetailScreen = uiState.currentDestination is ScreenDestination.ProductDetail
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        Scaffold(
-            modifier = Modifier.fillMaxSize(),
-            contentWindowInsets = WindowInsets(0, 0, 0, 0),
-            bottomBar = {
-                if (!isDetailScreen) {
-                    NavigationBar(
-                        containerColor = MaterialTheme.colorScheme.surface,
-                        contentColor = MaterialTheme.colorScheme.onSurface,
-                        windowInsets = WindowInsets.navigationBars
-                    ) {
-                        NavigationBarItem(
-                            selected = uiState.currentDestination is ScreenDestination.Scanner,
-                            onClick = { viewModel.navigateTo(ScreenDestination.Scanner) },
-                            icon = {
-                                Icon(
-                                    imageVector = if (uiState.currentDestination is ScreenDestination.Scanner) {
-                                        Icons.Filled.QrCodeScanner
-                                    } else {
-                                        Icons.Outlined.QrCodeScanner
-                                    },
-                                    contentDescription = stringResource(R.string.nav_scan)
-                                )
-                            },
-                            label = { Text(stringResource(R.string.nav_scan)) },
-                            modifier = Modifier.testTag("nav_scanner_tab")
-                        )
-
-                        NavigationBarItem(
-                            selected = uiState.currentDestination is ScreenDestination.History,
-                            onClick = { viewModel.navigateTo(ScreenDestination.History) },
-                            icon = {
-                                BadgedBox(
-                                    badge = {
-                                        if (historyProducts.isNotEmpty()) {
-                                            Badge {
-                                                Text(if (historyProducts.size > 99) "99+" else historyProducts.size.toString())
-                                            }
-                                        }
-                                    }
-                                ) {
-                                    Icon(
-                                        imageVector = if (uiState.currentDestination is ScreenDestination.History) {
-                                            Icons.Filled.History
-                                        } else {
-                                            Icons.Outlined.History
-                                        },
-                                        contentDescription = stringResource(R.string.nav_history)
-                                    )
-                                }
-                            },
-                            label = { Text(stringResource(R.string.nav_history)) },
-                            modifier = Modifier.testTag("nav_history_tab")
-                        )
-
-                        NavigationBarItem(
-                            selected = uiState.currentDestination is ScreenDestination.Dashboard,
-                            onClick = { viewModel.navigateTo(ScreenDestination.Dashboard) },
-                            icon = {
-                                Icon(
-                                    imageVector = if (uiState.currentDestination is ScreenDestination.Dashboard) {
-                                        Icons.Filled.Analytics
-                                    } else {
-                                        Icons.Outlined.Analytics
-                                    },
-                                    contentDescription = stringResource(R.string.nav_dashboard)
-                                )
-                            },
-                            label = { Text(stringResource(R.string.nav_dashboard)) },
-                            modifier = Modifier.testTag("nav_dashboard_tab")
-                        )
-
-                        NavigationBarItem(
-                            selected = uiState.currentDestination is ScreenDestination.Pantry,
-                            onClick = { viewModel.navigateTo(ScreenDestination.Pantry) },
-                            icon = {
-                                Icon(
-                                    imageVector = if (uiState.currentDestination is ScreenDestination.Pantry) {
-                                        Icons.Filled.Kitchen
-                                    } else {
-                                        Icons.Outlined.Kitchen
-                                    },
-                                    contentDescription = stringResource(R.string.nav_pantry)
-                                )
-                            },
-                            label = { Text(stringResource(R.string.nav_pantry)) },
-                            modifier = Modifier.testTag("nav_pantry_tab")
-                        )
-
-                        NavigationBarItem(
-                            selected = uiState.currentDestination is ScreenDestination.Profile,
-                            onClick = { viewModel.navigateTo(ScreenDestination.Profile) },
-                            icon = {
-                                Icon(
-                                    imageVector = if (uiState.currentDestination is ScreenDestination.Profile) {
-                                        Icons.Filled.HealthAndSafety
-                                    } else {
-                                        Icons.Outlined.HealthAndSafety
-                                    },
-                                    contentDescription = stringResource(R.string.nav_profile)
-                                )
-                            },
-                            label = { Text(stringResource(R.string.nav_profile)) },
-                            modifier = Modifier.testTag("nav_profile_tab")
-                        )
-                    }
-                }
+    val navigationRailContent = @Composable {
+        NavigationRail(
+            containerColor = MaterialTheme.colorScheme.surface,
+            contentColor = MaterialTheme.colorScheme.onSurface,
+            header = {
+                Spacer(modifier = Modifier.height(12.dp))
+                Icon(
+                    imageVector = Icons.Filled.QrCodeScanner,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(28.dp)
+                )
+                Spacer(modifier = Modifier.height(16.dp))
             }
-        ) { innerPadding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
         ) {
-            AnimatedContent(
-                targetState = uiState.currentDestination,
-                transitionSpec = {
-                    if (targetState is ScreenDestination.ProductDetail) {
-                        (slideInHorizontally(tween(300, easing = FastOutSlowInEasing)) { width -> width / 3 } + fadeIn(tween(250)))
-                            .togetherWith(slideOutHorizontally(tween(250, easing = FastOutSlowInEasing)) { width -> -width / 4 } + fadeOut(tween(200)))
-                    } else if (initialState is ScreenDestination.ProductDetail) {
-                        (slideInHorizontally(tween(300, easing = FastOutSlowInEasing)) { width -> -width / 4 } + fadeIn(tween(250)))
-                            .togetherWith(slideOutHorizontally(tween(250, easing = FastOutSlowInEasing)) { width -> width / 3 } + fadeOut(tween(200)))
-                    } else {
-                        (fadeIn(tween(220)) + scaleIn(initialScale = 0.96f, animationSpec = tween(220)))
-                            .togetherWith(fadeOut(tween(180)))
+            NavigationRailItem(
+                selected = uiState.currentDestination is ScreenDestination.Scanner,
+                onClick = { viewModel.navigateTo(ScreenDestination.Scanner) },
+                icon = {
+                    Icon(
+                        imageVector = if (uiState.currentDestination is ScreenDestination.Scanner) {
+                            Icons.Filled.QrCodeScanner
+                        } else {
+                            Icons.Outlined.QrCodeScanner
+                        },
+                        contentDescription = stringResource(R.string.nav_scan)
+                    )
+                },
+                label = { Text(stringResource(R.string.nav_scan)) },
+                modifier = Modifier.testTag("nav_scanner_tab")
+            )
+
+            NavigationRailItem(
+                selected = uiState.currentDestination is ScreenDestination.History,
+                onClick = { viewModel.navigateTo(ScreenDestination.History) },
+                icon = {
+                    BadgedBox(
+                        badge = {
+                            if (historyProducts.isNotEmpty()) {
+                                Badge {
+                                    Text(if (historyProducts.size > 99) "99+" else historyProducts.size.toString())
+                                }
+                            }
+                        }
+                    ) {
+                        Icon(
+                            imageVector = if (uiState.currentDestination is ScreenDestination.History) {
+                                Icons.Filled.History
+                            } else {
+                                Icons.Outlined.History
+                            },
+                            contentDescription = stringResource(R.string.nav_history)
+                        )
                     }
                 },
-                label = "screen_navigation_transition"
-            ) { destination ->
-                when (destination) {
-                    is ScreenDestination.Scanner -> {
-                        ScannerScreen(
-                            isTorchEnabled = uiState.isTorchEnabled,
-                            onToggleTorch = { viewModel.toggleTorch() },
-                            onBarcodeScanned = { barcode -> viewModel.scanBarcode(barcode) },
-                            onNavigateToHistory = { viewModel.navigateTo(ScreenDestination.History) },
-                            historyCount = historyProducts.size,
-                            onOpenDonationDialog = { viewModel.setDonationDialogVisible(true) },
-                            shouldShowHomeBanner = userProfile.shouldShowHomeBanner,
-                            onDismissBanner = { viewModel.dismissHomeBanner() },
-                            isSupporter = userProfile.isSupporter,
-                            modifier = Modifier.fillMaxSize()
-                        )
-                    }
+                label = { Text(stringResource(R.string.nav_history)) },
+                modifier = Modifier.testTag("nav_history_tab")
+            )
 
-                    is ScreenDestination.ProductDetail -> {
-                        ProductDetailScreen(
-                            product = uiState.selectedProduct,
-                            warnings = uiState.productWarnings,
-                            isLoading = uiState.isLoading,
-                            errorMessage = uiState.errorMessage,
-                            onBack = { viewModel.navigateBack() },
-                            onToggleFavorite = { product -> viewModel.toggleFavorite(product) },
-                            onRefresh = {
-                                uiState.selectedProduct?.barcode?.let { barcode ->
-                                    viewModel.loadProduct(barcode, forceRefresh = true)
+            NavigationRailItem(
+                selected = uiState.currentDestination is ScreenDestination.Dashboard,
+                onClick = { viewModel.navigateTo(ScreenDestination.Dashboard) },
+                icon = {
+                    Icon(
+                        imageVector = if (uiState.currentDestination is ScreenDestination.Dashboard) {
+                            Icons.Filled.Analytics
+                        } else {
+                            Icons.Outlined.Analytics
+                        },
+                        contentDescription = stringResource(R.string.nav_dashboard)
+                    )
+                },
+                label = { Text(stringResource(R.string.nav_dashboard)) },
+                modifier = Modifier.testTag("nav_dashboard_tab")
+            )
+
+            NavigationRailItem(
+                selected = uiState.currentDestination is ScreenDestination.Pantry,
+                onClick = { viewModel.navigateTo(ScreenDestination.Pantry) },
+                icon = {
+                    Icon(
+                        imageVector = if (uiState.currentDestination is ScreenDestination.Pantry) {
+                            Icons.Filled.Kitchen
+                        } else {
+                            Icons.Outlined.Kitchen
+                        },
+                        contentDescription = stringResource(R.string.nav_pantry)
+                    )
+                },
+                label = { Text(stringResource(R.string.nav_pantry)) },
+                modifier = Modifier.testTag("nav_pantry_tab")
+            )
+
+            NavigationRailItem(
+                selected = uiState.currentDestination is ScreenDestination.Profile,
+                onClick = { viewModel.navigateTo(ScreenDestination.Profile) },
+                icon = {
+                    Icon(
+                        imageVector = if (uiState.currentDestination is ScreenDestination.Profile) {
+                            Icons.Filled.HealthAndSafety
+                        } else {
+                            Icons.Outlined.HealthAndSafety
+                        },
+                        contentDescription = stringResource(R.string.nav_profile)
+                    )
+                },
+                label = { Text(stringResource(R.string.nav_profile)) },
+                modifier = Modifier.testTag("nav_profile_tab")
+            )
+        }
+    }
+
+    val bottomBarContent = @Composable {
+        if (!isDetailScreen) {
+            NavigationBar(
+                containerColor = MaterialTheme.colorScheme.surface,
+                contentColor = MaterialTheme.colorScheme.onSurface,
+                windowInsets = WindowInsets.navigationBars
+            ) {
+                NavigationBarItem(
+                    selected = uiState.currentDestination is ScreenDestination.Scanner,
+                    onClick = { viewModel.navigateTo(ScreenDestination.Scanner) },
+                    icon = {
+                        Icon(
+                            imageVector = if (uiState.currentDestination is ScreenDestination.Scanner) {
+                                Icons.Filled.QrCodeScanner
+                            } else {
+                                Icons.Outlined.QrCodeScanner
+                            },
+                            contentDescription = stringResource(R.string.nav_scan)
+                        )
+                    },
+                    label = { Text(stringResource(R.string.nav_scan)) },
+                    modifier = Modifier.testTag("nav_scanner_tab")
+                )
+
+                NavigationBarItem(
+                    selected = uiState.currentDestination is ScreenDestination.History,
+                    onClick = { viewModel.navigateTo(ScreenDestination.History) },
+                    icon = {
+                        BadgedBox(
+                            badge = {
+                                if (historyProducts.isNotEmpty()) {
+                                    Badge {
+                                        Text(if (historyProducts.size > 99) "99+" else historyProducts.size.toString())
+                                    }
                                 }
+                            }
+                        ) {
+                            Icon(
+                                imageVector = if (uiState.currentDestination is ScreenDestination.History) {
+                                Icons.Filled.History
+                            } else {
+                                Icons.Outlined.History
                             },
-                            onOpenDonationDialog = { viewModel.setDonationDialogVisible(true) },
-                            isSupporter = userProfile.isSupporter,
-                            modifier = Modifier.fillMaxSize()
+                            contentDescription = stringResource(R.string.nav_history)
                         )
                     }
+                },
+                label = { Text(stringResource(R.string.nav_history)) },
+                modifier = Modifier.testTag("nav_history_tab")
+            )
 
-                    is ScreenDestination.History -> {
-                        HistoryScreen(
-                            products = recentHistoryProducts,
-                            currentFilter = uiState.historyFilter,
-                            searchQuery = uiState.searchQuery,
-                            onFilterChange = { filter -> viewModel.setHistoryFilter(filter) },
-                            onSearchChange = { query -> viewModel.setSearchQuery(query) },
-                            onProductClick = { barcode -> viewModel.loadProduct(barcode) },
-                            onToggleFavorite = { product -> viewModel.toggleFavorite(product) },
-                            onDeleteProduct = { barcode -> viewModel.deleteProduct(barcode) },
-                            onClearAll = { viewModel.clearHistory() },
-                            onSeedSamples = { viewModel.seedSampleScans() },
-                            modifier = Modifier.fillMaxSize()
-                        )
+            NavigationBarItem(
+                selected = uiState.currentDestination is ScreenDestination.Dashboard,
+                onClick = { viewModel.navigateTo(ScreenDestination.Dashboard) },
+                icon = {
+                    Icon(
+                        imageVector = if (uiState.currentDestination is ScreenDestination.Dashboard) {
+                            Icons.Filled.Analytics
+                        } else {
+                            Icons.Outlined.Analytics
+                        },
+                        contentDescription = stringResource(R.string.nav_dashboard)
+                    )
+                },
+                label = { Text(stringResource(R.string.nav_dashboard)) },
+                modifier = Modifier.testTag("nav_dashboard_tab")
+            )
+
+            NavigationBarItem(
+                selected = uiState.currentDestination is ScreenDestination.Pantry,
+                onClick = { viewModel.navigateTo(ScreenDestination.Pantry) },
+                icon = {
+                    Icon(
+                        imageVector = if (uiState.currentDestination is ScreenDestination.Pantry) {
+                            Icons.Filled.Kitchen
+                        } else {
+                            Icons.Outlined.Kitchen
+                        },
+                        contentDescription = stringResource(R.string.nav_pantry)
+                    )
+                },
+                label = { Text(stringResource(R.string.nav_pantry)) },
+                modifier = Modifier.testTag("nav_pantry_tab")
+            )
+
+            NavigationBarItem(
+                selected = uiState.currentDestination is ScreenDestination.Profile,
+                onClick = { viewModel.navigateTo(ScreenDestination.Profile) },
+                icon = {
+                    Icon(
+                        imageVector = if (uiState.currentDestination is ScreenDestination.Profile) {
+                            Icons.Filled.HealthAndSafety
+                        } else {
+                            Icons.Outlined.HealthAndSafety
+                        },
+                        contentDescription = stringResource(R.string.nav_profile)
+                    )
+                },
+                label = { Text(stringResource(R.string.nav_profile)) },
+                modifier = Modifier.testTag("nav_profile_tab")
+            )
+        }
+    }
+}
+
+    val mainScreensContent = @Composable {
+        AnimatedContent(
+            targetState = uiState.currentDestination,
+            transitionSpec = {
+                if (targetState is ScreenDestination.ProductDetail) {
+                    (slideInHorizontally(tween(300, easing = FastOutSlowInEasing)) { width -> width / 3 } + fadeIn(tween(250)))
+                        .togetherWith(slideOutHorizontally(tween(250, easing = FastOutSlowInEasing)) { width -> -width / 4 } + fadeOut(tween(200)))
+                } else if (initialState is ScreenDestination.ProductDetail) {
+                    (slideInHorizontally(tween(300, easing = FastOutSlowInEasing)) { width -> -width / 4 } + fadeIn(tween(250)))
+                        .togetherWith(slideOutHorizontally(tween(250, easing = FastOutSlowInEasing)) { width -> width / 3 } + fadeOut(tween(200)))
+                } else {
+                    (fadeIn(tween(220)) + scaleIn(initialScale = 0.96f, animationSpec = tween(220)))
+                        .togetherWith(fadeOut(tween(180)))
+                }
+            },
+            label = "screen_navigation_transition"
+        ) { destination ->
+            when (destination) {
+                is ScreenDestination.Scanner -> {
+                    ScannerScreen(
+                        isTorchEnabled = uiState.isTorchEnabled,
+                        onToggleTorch = { viewModel.toggleTorch() },
+                        onBarcodeScanned = { barcode -> viewModel.scanBarcode(barcode) },
+                        onNavigateToHistory = { viewModel.navigateTo(ScreenDestination.History) },
+                        historyCount = historyProducts.size,
+                        onOpenDonationDialog = { viewModel.setDonationDialogVisible(true) },
+                        shouldShowHomeBanner = userProfile.shouldShowHomeBanner,
+                        onDismissBanner = { viewModel.dismissHomeBanner() },
+                        isSupporter = userProfile.isSupporter,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+
+                is ScreenDestination.ProductDetail -> {
+                    ProductDetailScreen(
+                        product = uiState.selectedProduct,
+                        warnings = uiState.productWarnings,
+                        isLoading = uiState.isLoading,
+                        errorMessage = uiState.errorMessage,
+                        onBack = { viewModel.navigateBack() },
+                        onToggleFavorite = { product -> viewModel.toggleFavorite(product) },
+                        onRefresh = {
+                            uiState.selectedProduct?.barcode?.let { barcode ->
+                                viewModel.loadProduct(barcode, forceRefresh = true)
+                            }
+                        },
+                        onOpenDonationDialog = { viewModel.setDonationDialogVisible(true) },
+                        isSupporter = userProfile.isSupporter,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+
+                is ScreenDestination.History -> {
+                    HistoryScreen(
+                        products = recentHistoryProducts,
+                        currentFilter = uiState.historyFilter,
+                        searchQuery = uiState.searchQuery,
+                        onFilterChange = { filter -> viewModel.setHistoryFilter(filter) },
+                        onSearchChange = { query -> viewModel.setSearchQuery(query) },
+                        onProductClick = { barcode -> viewModel.loadProduct(barcode) },
+                        onToggleFavorite = { product -> viewModel.toggleFavorite(product) },
+                        onDeleteProduct = { barcode -> viewModel.deleteProduct(barcode) },
+                        onClearAll = { viewModel.clearHistory() },
+                        onSeedSamples = { viewModel.seedSampleScans() },
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+
+                is ScreenDestination.Dashboard -> {
+                    DashboardScreen(
+                        products = historyProducts,
+                        onSelectProductForScan = { viewModel.navigateTo(ScreenDestination.Scanner) },
+                        onProductClick = { barcode -> viewModel.loadProduct(barcode) },
+                        onSeedSamples = { viewModel.seedSampleScans() },
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+
+                is ScreenDestination.Profile -> {
+                    ProfileScreen(
+                        userProfile = userProfile,
+                        onToggleAllergen = { allergen, monitored ->
+                            viewModel.toggleAllergen(allergen, monitored)
+                        },
+                        onSetVegan = { viewModel.setVegan(it) },
+                        onSetVegetarian = { viewModel.setVegetarian(it) },
+                        onSetGlutenFree = { viewModel.setGlutenFree(it) },
+                        onAddCustomKeyword = { viewModel.addCustomKeyword(it) },
+                        onRemoveCustomKeyword = { viewModel.removeCustomKeyword(it) },
+                        onSetAvoidPalmOil = { viewModel.setAvoidPalmOil(it) },
+                        onSetAvoidNova4 = { viewModel.setAvoidNova4(it) },
+                        onSetAvoidHighRiskAdditives = { viewModel.setAvoidHighRiskAdditives(it) },
+                        onResetToDefaults = { viewModel.resetToDefaults() },
+                        onOpenDonationDialog = { viewModel.setDonationDialogVisible(true) },
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+
+                is ScreenDestination.Pantry -> {
+                    PantryScreen(
+                        pantryItems = pantryList,
+                        onToggleConsumed = { barcode, consumed -> viewModel.togglePantryConsumed(barcode, consumed) },
+                        onUpdateExpiration = { barcode, date -> viewModel.updatePantryExpiration(barcode, date) },
+                        onDeleteItem = { barcode -> viewModel.deletePantryItem(barcode) },
+                        onClearPantry = { viewModel.clearPantry() },
+                        onSeedPantry = { viewModel.seedSamplePantry() },
+                        onProductClick = { barcode -> viewModel.loadProduct(barcode) },
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+            }
+        }
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+            val isWide = maxWidth >= 600.dp
+            if (isWide) {
+                Row(modifier = Modifier.fillMaxSize()) {
+                    if (!isDetailScreen) {
+                        navigationRailContent()
                     }
-
-                    is ScreenDestination.Dashboard -> {
-                        DashboardScreen(
-                            products = historyProducts,
-                            onSelectProductForScan = { viewModel.navigateTo(ScreenDestination.Scanner) },
-                            onProductClick = { barcode -> viewModel.loadProduct(barcode) },
-                            onSeedSamples = { viewModel.seedSampleScans() },
-                            modifier = Modifier.fillMaxSize()
-                        )
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                    ) {
+                        mainScreensContent()
                     }
-
-                    is ScreenDestination.Profile -> {
-                        ProfileScreen(
-                            userProfile = userProfile,
-                            onToggleAllergen = { allergen, monitored ->
-                                viewModel.toggleAllergen(allergen, monitored)
-                            },
-                            onSetVegan = { viewModel.setVegan(it) },
-                            onSetVegetarian = { viewModel.setVegetarian(it) },
-                            onSetGlutenFree = { viewModel.setGlutenFree(it) },
-                            onAddCustomKeyword = { viewModel.addCustomKeyword(it) },
-                            onRemoveCustomKeyword = { viewModel.removeCustomKeyword(it) },
-                            onSetAvoidPalmOil = { viewModel.setAvoidPalmOil(it) },
-                            onSetAvoidNova4 = { viewModel.setAvoidNova4(it) },
-                            onSetAvoidHighRiskAdditives = { viewModel.setAvoidHighRiskAdditives(it) },
-                            onResetToDefaults = { viewModel.resetToDefaults() },
-                            onOpenDonationDialog = { viewModel.setDonationDialogVisible(true) },
-                            modifier = Modifier.fillMaxSize()
-                        )
-                    }
-
-                    is ScreenDestination.Pantry -> {
-                        PantryScreen(
-                            pantryItems = pantryList,
-                            onToggleConsumed = { barcode, consumed -> viewModel.togglePantryConsumed(barcode, consumed) },
-                            onUpdateExpiration = { barcode, date -> viewModel.updatePantryExpiration(barcode, date) },
-                            onDeleteItem = { barcode -> viewModel.deletePantryItem(barcode) },
-                            onClearPantry = { viewModel.clearPantry() },
-                            onSeedPantry = { viewModel.seedSamplePantry() },
-                            onProductClick = { barcode -> viewModel.loadProduct(barcode) },
-                            modifier = Modifier.fillMaxSize()
-                        )
+                }
+            } else {
+                Scaffold(
+                    modifier = Modifier.fillMaxSize(),
+                    contentWindowInsets = WindowInsets(0, 0, 0, 0),
+                    bottomBar = bottomBarContent
+                ) { innerPadding ->
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(innerPadding)
+                    ) {
+                        mainScreensContent()
                     }
                 }
             }
         }
-        } // Close Scaffold
 
         if (uiState.showDonationDialog) {
             com.example.ui.components.DonationDialog(

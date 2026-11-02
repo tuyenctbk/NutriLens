@@ -1,18 +1,85 @@
+# Built application files
+*.apk
+*.aar
+*.ap_
+*.aab
+
+# Files for the ART/Dalvik VM
+*.dex
+
+# Java class files
+*.class
+
+# Generated files
+bin/
+gen/
+out/
+build/
+app/build/
+reports/
+
+# Gradle files
+.gradle/
+buildOutputCleanup/
+
+# Android Studio / IntelliJ IDEA
+.idea/
 *.iml
-.gradle
-.kotlin
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-.DS_Store
-/build
-/captures
+*.ipr
+*.ipr
+*.iws
+.project
+.classpath
+.settings/
+
+# Android Studio Navigation editor temp files
+.idea/navEditor.xml
+.idea/assetWizardSettings.xml
+
+# VS Code
+.vscode/*
+!.vscode/settings.json
+
+# CMake / Native builds
 .externalNativeBuild
-.cxx
+.cxx/
+*.cmake
+compile_commands.json
+
+# Keystores & Signing Keys (Never commit production or release keys)
+*.jks
+*.keystore
+*.key
+*.p12
+*.pem
+!debug.keystore
+
+# Local configuration & environment files
 local.properties
 .env
-debug.keystore
+.env.local
+.env.*.local
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Kotlin / JVM
+.kotlin/
+*.kotlin_module
+
+# Android profiling & captures
+captures/
+*.hprof
+*.prof
+*.profm
+
+# Temporary files & crash logs
+tmp/
+*.tmp
+*.log

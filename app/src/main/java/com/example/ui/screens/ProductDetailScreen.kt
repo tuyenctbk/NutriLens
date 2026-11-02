@@ -12,6 +12,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -65,6 +66,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
@@ -252,109 +254,179 @@ private fun ProductContent(
     isSupporter: Boolean = false,
     modifier: Modifier = Modifier
 ) {
-    Column(
-        modifier = modifier
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp)
-    ) {
-        // Hero Header Card
-        Card(
-            shape = RoundedCornerShape(20.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)),
-            modifier = Modifier.fillMaxWidth()
-        ) {
+    BoxWithConstraints(modifier = modifier) {
+        val isWide = maxWidth >= 720.dp
+
+        if (isWide) {
+            // Adaptive Two-Column Layout for Tablets / Foldables / Landscape
             Row(
-                modifier = Modifier.padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(20.dp),
+                horizontalArrangement = Arrangement.spacedBy(20.dp),
+                verticalAlignment = Alignment.Top
             ) {
-                // Product Image
-                Box(
-                    modifier = Modifier
-                        .size(96.dp)
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(Color.White)
-                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(16.dp)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    if (!product.imageUrl.isNullOrBlank()) {
-                        AsyncImage(
-                            model = ImageRequest.Builder(LocalContext.current)
-                                .data(product.imageUrl)
-                                .crossfade(true)
-                                .build(),
-                            contentDescription = product.name,
-                            contentScale = ContentScale.Fit,
-                            modifier = Modifier.fillMaxSize().padding(4.dp)
-                        )
-                    } else {
-                        Icon(
-                            imageVector = Icons.Default.NoFood,
-                            contentDescription = null,
-                            tint = Color.Gray,
-                            modifier = Modifier.size(36.dp)
-                        )
-                    }
+                // Left Column: Hero, Scores, Dietary Badges, Additives, Ingredients
+                Column(modifier = Modifier.weight(1f)) {
+                    ProductHeroCard(product = product)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    ProductScoresSection(product = product)
+                    Spacer(modifier = Modifier.height(20.dp))
+                    ProductDietarySection(product = product)
+                    Spacer(modifier = Modifier.height(20.dp))
+                    ProductAdditivesSection(product = product)
+                    Spacer(modifier = Modifier.height(20.dp))
+                    ProductIngredientsSection(product = product)
+                    Spacer(modifier = Modifier.height(40.dp))
                 }
 
-                Spacer(modifier = Modifier.width(16.dp))
-
+                // Right Column: Personalized Verdict, Bar Chart, Nutrition Table, Donation
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = product.brand,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Bold
+                    PersonalizedVerdictBanner(warnings = warnings)
+                    Spacer(modifier = Modifier.height(20.dp))
+                    NutritionalBarChart(nutriments = product.nutriments)
+                    Spacer(modifier = Modifier.height(20.dp))
+                    ProductNutritionTableSection(nutriments = product.nutriments)
+                    if (!isSupporter) {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        ProductDonationCard(onOpenDonationDialog = onOpenDonationDialog)
+                    }
+                    Spacer(modifier = Modifier.height(40.dp))
+                }
+            }
+        } else {
+            // Single Column Layout for Phones
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp)
+            ) {
+                ProductHeroCard(product = product)
+                Spacer(modifier = Modifier.height(16.dp))
+                PersonalizedVerdictBanner(warnings = warnings)
+                Spacer(modifier = Modifier.height(16.dp))
+                ProductScoresSection(product = product)
+                Spacer(modifier = Modifier.height(20.dp))
+                ProductDietarySection(product = product)
+                Spacer(modifier = Modifier.height(20.dp))
+                ProductAdditivesSection(product = product)
+                Spacer(modifier = Modifier.height(20.dp))
+                ProductIngredientsSection(product = product)
+                Spacer(modifier = Modifier.height(20.dp))
+                NutritionalBarChart(nutriments = product.nutriments)
+                Spacer(modifier = Modifier.height(20.dp))
+                ProductNutritionTableSection(nutriments = product.nutriments)
+                if (!isSupporter) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    ProductDonationCard(onOpenDonationDialog = onOpenDonationDialog)
+                }
+                Spacer(modifier = Modifier.height(80.dp))
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProductHeroCard(product: Product, modifier: Modifier = Modifier) {
+    Card(
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)),
+        modifier = modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Product Image
+            Box(
+                modifier = Modifier
+                    .size(96.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Color.White)
+                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(16.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                if (!product.imageUrl.isNullOrBlank()) {
+                    AsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(product.imageUrl)
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = product.name,
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier.fillMaxSize().padding(4.dp)
                     )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = product.name,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
+                } else {
+                    Icon(
+                        imageVector = Icons.Default.NoFood,
+                        contentDescription = null,
+                        tint = Color.Gray,
+                        modifier = Modifier.size(36.dp)
                     )
-                    Spacer(modifier = Modifier.height(4.dp))
+                }
+            }
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = product.brand,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = product.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = stringResource(R.string.upc_ean_label, product.barcode),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                if (!product.quantity.isNullOrBlank()) {
                     Text(
-                        text = stringResource(R.string.upc_ean_label, product.barcode),
+                        text = stringResource(R.string.net_weight_label, product.quantity),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    if (!product.quantity.isNullOrBlank()) {
-                        Text(
-                            text = stringResource(R.string.net_weight_label, product.quantity),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+                }
 
-                    // Offline Room cached badge
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.CloudDone,
-                            contentDescription = stringResource(R.string.cached_room_badge),
-                            tint = Color(0xFF2E7D32),
-                            modifier = Modifier.size(14.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = stringResource(R.string.cached_room_badge),
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = Color(0xFF2E7D32)
-                        )
-                    }
+                // Offline Room cached badge
+                Spacer(modifier = Modifier.height(6.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.CloudDone,
+                        contentDescription = stringResource(R.string.cached_room_badge),
+                        tint = Color(0xFF2E7D32),
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = stringResource(R.string.cached_room_badge),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFF2E7D32)
+                    )
                 }
             }
         }
+    }
+}
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Personalized Safety & Dietary Verdict Banner
-        PersonalizedVerdictBanner(warnings = warnings)
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Food Scores Trio (Nutri-Score, NOVA Group, Eco-Score)
+@Composable
+private fun ProductScoresSection(product: Product, modifier: Modifier = Modifier) {
+    Column(modifier = modifier.fillMaxWidth()) {
         Text(
             text = stringResource(R.string.food_quality_scores),
             style = MaterialTheme.typography.titleSmall,
@@ -363,30 +435,32 @@ private fun ProductContent(
         )
         Spacer(modifier = Modifier.height(8.dp))
 
+        NutriScoreCard(
+            grade = product.nutriscoreGrade,
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            NutriScoreCard(
-                grade = product.nutriscoreGrade,
-                modifier = Modifier.weight(1.2f)
-            )
             NovaGroupCard(
                 group = product.novaGroup,
                 modifier = Modifier.weight(1f)
             )
+            EcoScoreCard(
+                grade = product.ecoscoreGrade,
+                modifier = Modifier.weight(1f)
+            )
         }
+    }
+}
 
-        Spacer(modifier = Modifier.height(8.dp))
-
-        EcoScoreCard(
-            grade = product.ecoscoreGrade,
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(modifier = Modifier.height(20.dp))
-
-        // Dietary & Formulation Badges (Palm Oil, Vegan, Vegetarian)
+@Composable
+private fun ProductDietarySection(product: Product, modifier: Modifier = Modifier) {
+    Column(modifier = modifier.fillMaxWidth()) {
         Text(
             text = stringResource(R.string.dietary_profile_check),
             style = MaterialTheme.typography.titleSmall,
@@ -396,10 +470,13 @@ private fun ProductContent(
         Spacer(modifier = Modifier.height(8.dp))
 
         DietaryFlagsRow(product = product)
+    }
+}
 
-        Spacer(modifier = Modifier.height(20.dp))
-
-        // Food Additives Section (E-Numbers)
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun ProductAdditivesSection(product: Product, modifier: Modifier = Modifier) {
+    Column(modifier = modifier.fillMaxWidth()) {
         Text(
             text = stringResource(R.string.food_additives_detected_count, product.additives.size),
             style = MaterialTheme.typography.titleSmall,
@@ -442,10 +519,12 @@ private fun ProductContent(
                 }
             }
         }
+    }
+}
 
-        Spacer(modifier = Modifier.height(20.dp))
-
-        // Ingredients Text
+@Composable
+private fun ProductIngredientsSection(product: Product, modifier: Modifier = Modifier) {
+    Column(modifier = modifier.fillMaxWidth()) {
         Text(
             text = stringResource(R.string.ingredients_list),
             style = MaterialTheme.typography.titleSmall,
@@ -468,15 +547,12 @@ private fun ProductContent(
                 )
             }
         }
+    }
+}
 
-        Spacer(modifier = Modifier.height(20.dp))
-
-        // Graphical Nutritional Breakdown Bar Chart
-        NutritionalBarChart(nutriments = product.nutriments)
-
-        Spacer(modifier = Modifier.height(20.dp))
-
-        // Nutrition Table (per 100g)
+@Composable
+private fun ProductNutritionTableSection(nutriments: com.example.model.NutrimentsInfo, modifier: Modifier = Modifier) {
+    Column(modifier = modifier.fillMaxWidth()) {
         Text(
             text = stringResource(R.string.nutritional_values),
             style = MaterialTheme.typography.titleSmall,
@@ -485,49 +561,48 @@ private fun ProductContent(
         )
         Spacer(modifier = Modifier.height(8.dp))
 
-        NutritionTable(nutriments = product.nutriments)
+        NutritionTable(nutriments = nutriments)
+    }
+}
 
-
-        if (!isSupporter) {
-            Spacer(modifier = Modifier.height(16.dp))
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("post_scan_donation_card"),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)
-                ),
-                shape = RoundedCornerShape(16.dp)
+@Composable
+private fun ProductDonationCard(onOpenDonationDialog: () -> Unit, modifier: Modifier = Modifier) {
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .testTag("post_scan_donation_card"),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)
+        ),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Default.Favorite,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(modifier = Modifier.width(10.dp))
+            Text(
+                text = stringResource(R.string.post_scan_support_prompt),
+                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Button(
+                onClick = onOpenDonationDialog,
+                shape = RoundedCornerShape(10.dp)
             ) {
-                Row(
-                    modifier = Modifier.padding(14.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Favorite,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(24.dp)
-                    )
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Text(
-                        text = stringResource(R.string.post_scan_support_prompt),
-                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                        color = MaterialTheme.colorScheme.onSecondaryContainer,
-                        modifier = Modifier.weight(1f)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Button(
-                        onClick = onOpenDonationDialog,
-                        shape = RoundedCornerShape(10.dp)
-                    ) {
-                        Text(stringResource(R.string.support_dev_button), fontSize = 11.sp)
-                    }
-                }
+                Text(stringResource(R.string.support_dev_button), fontSize = 11.sp)
             }
         }
-
-        Spacer(modifier = Modifier.height(80.dp))
     }
 }
 
@@ -580,7 +655,7 @@ fun PersonalizedVerdictBanner(warnings: List<HealthWarning>, modifier: Modifier 
                             color = borderColor,
                             modifier = Modifier.padding(end = 6.dp)
                         )
-                        Column {
+                        Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = warning.title,
                                 fontWeight = FontWeight.Bold,
@@ -641,7 +716,9 @@ fun DietaryFlagsRow(product: Product, modifier: Modifier = Modifier) {
                     fontWeight = FontWeight.Bold,
                     fontSize = 11.sp,
                     color = palmText,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
         }
@@ -675,7 +752,9 @@ fun DietaryFlagsRow(product: Product, modifier: Modifier = Modifier) {
                     fontWeight = FontWeight.Bold,
                     fontSize = 11.sp,
                     color = veganText,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
         }
@@ -709,7 +788,9 @@ fun DietaryFlagsRow(product: Product, modifier: Modifier = Modifier) {
                     fontWeight = FontWeight.Bold,
                     fontSize = 11.sp,
                     color = vegText,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
         }
@@ -748,7 +829,10 @@ private fun NutritionRow(label: String, value: String, level: TrafficLight = Tra
         Text(
             text = label,
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f, fill = false)
         )
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(

@@ -63,6 +63,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.R
@@ -223,14 +224,14 @@ private fun GooglePlayTiersSection(
                 modifier = Modifier.weight(1f),
                 shape = RoundedCornerShape(10.dp)
             ) {
-                Text(stringResource(R.string.donation_tier_1), fontSize = 11.sp, textAlign = TextAlign.Center)
+                Text(stringResource(R.string.donation_tier_1), fontSize = 11.sp, textAlign = TextAlign.Center, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
             Button(
                 onClick = { onSelectTier("Coffee ($4.99)") },
                 modifier = Modifier.weight(1f),
                 shape = RoundedCornerShape(10.dp)
             ) {
-                Text(stringResource(R.string.donation_tier_2), fontSize = 11.sp, textAlign = TextAlign.Center)
+                Text(stringResource(R.string.donation_tier_2), fontSize = 11.sp, textAlign = TextAlign.Center, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
 
@@ -243,14 +244,14 @@ private fun GooglePlayTiersSection(
                 modifier = Modifier.weight(1f),
                 shape = RoundedCornerShape(10.dp)
             ) {
-                Text(stringResource(R.string.donation_tier_3), fontSize = 11.sp, textAlign = TextAlign.Center)
+                Text(stringResource(R.string.donation_tier_3), fontSize = 11.sp, textAlign = TextAlign.Center, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
             FilledTonalButton(
                 onClick = { onSelectTier("Supporter ($19.99)") },
                 modifier = Modifier.weight(1f),
                 shape = RoundedCornerShape(10.dp)
             ) {
-                Text(stringResource(R.string.donation_tier_4), fontSize = 11.sp, textAlign = TextAlign.Center)
+                Text(stringResource(R.string.donation_tier_4), fontSize = 11.sp, textAlign = TextAlign.Center, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
     }
