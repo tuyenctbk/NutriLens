@@ -19,4 +19,14 @@ class ExampleInstrumentedTest {
     val appContext = InstrumentationRegistry.getInstrumentation().targetContext
     assertEquals(BuildConfig.APPLICATION_ID, appContext.packageName)
   }
+
+  @Test
+  fun testLauncherIconLoadsSuccessfully() {
+    val appContext = InstrumentationRegistry.getInstrumentation().targetContext
+    val pm = appContext.packageManager
+    val appInfo = pm.getApplicationInfo(appContext.packageName, 0)
+    val icon = appInfo.loadIcon(pm)
+    assertNotNull(icon)
+    assertTrue("Icon must be an AdaptiveIconDrawable", icon is android.graphics.drawable.AdaptiveIconDrawable)
+  }
 }
