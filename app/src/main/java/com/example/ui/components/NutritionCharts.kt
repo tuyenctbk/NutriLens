@@ -38,6 +38,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -145,10 +146,10 @@ object NutritionMath {
         if (products.isEmpty()) return PortfolioAverages(0.0, 0.0, 0.0, 0.0)
         val count = products.size.toDouble()
         return PortfolioAverages(
-            avgKcal = products.sumOf { it.nutriments.energyKcal ?: 0.0 } / count,
-            avgCarbs = products.sumOf { it.nutriments.carbs ?: 0.0 } / count,
-            avgFat = products.sumOf { it.nutriments.fat ?: 0.0 } / count,
-            avgProtein = products.sumOf { it.nutriments.proteins ?: 0.0 } / count
+            avgKcal = products.sumOf { (it.nutriments.energyKcal ?: 0.0).coerceAtLeast(0.0) } / count,
+            avgCarbs = products.sumOf { (it.nutriments.carbs ?: 0.0).coerceAtLeast(0.0) } / count,
+            avgFat = products.sumOf { (it.nutriments.fat ?: 0.0).coerceAtLeast(0.0) } / count,
+            avgProtein = products.sumOf { (it.nutriments.proteins ?: 0.0).coerceAtLeast(0.0) } / count
         )
     }
 }
@@ -826,6 +827,7 @@ fun MultiProductMacroBarChartCard(
                     verticalAlignment = Alignment.Bottom
                 ) {
                     chartProducts.forEach { product ->
+                        key(product.barcode) {
                         val isSelected = product.barcode == selectedBarcode
                         val carbs = (product.nutriments.carbs ?: 0.0).coerceAtLeast(0.0)
                         val fat = (product.nutriments.fat ?: 0.0).coerceAtLeast(0.0)
@@ -973,6 +975,7 @@ fun MultiProductMacroBarChartCard(
                                 overflow = TextOverflow.Ellipsis,
                                 textAlign = TextAlign.Center
                             )
+                        }
                         }
                     }
                 }

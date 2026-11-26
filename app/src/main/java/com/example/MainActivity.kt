@@ -76,6 +76,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -129,7 +130,9 @@ class MainActivity : ComponentActivity() {
         // Create system notification channels (Dietary Safety & Pantry Expiration)
         SafetyNotificationManager.createNotificationChannel(applicationContext)
 
-        handleLaunchIntent(intent)
+        if (savedInstanceState == null) {
+            handleLaunchIntent(intent)
+        }
 
         // Collect ViewModel-scoped Google Play Billing requests strictly while RESUMED
         // so BillingClient.launchBillingFlow always receives a live, valid Activity session.
@@ -195,11 +198,13 @@ class MainActivity : ComponentActivity() {
     private fun handleLaunchIntent(intent: Intent?) {
         val barcode = intent?.getStringExtra("EXTRA_BARCODE")
         if (!barcode.isNullOrBlank()) {
-            viewModel.loadProduct(barcode)
+            intent.removeExtra("EXTRA_BARCODE")
+            viewModel.loadProduct(barcode, isNewScan = false)
             return
         }
         val openTab = intent?.getStringExtra(SafetyNotificationManager.EXTRA_OPEN_TAB)
         if (openTab == SafetyNotificationManager.TAB_PANTRY) {
+            intent.removeExtra(SafetyNotificationManager.EXTRA_OPEN_TAB)
             viewModel.navigateTo(ScreenDestination.Pantry)
         }
     }
@@ -214,15 +219,16 @@ fun NutriLensApp(
     val userProfile by viewModel.userProfile.collectAsStateWithLifecycle()
     val billingState by viewModel.billingState.collectAsStateWithLifecycle()
     val historyProducts by viewModel.historyList.collectAsStateWithLifecycle()
-    val recentHistoryProducts by viewModel.recentHistoryList.collectAsStateWithLifecycle()
     val pantryList by viewModel.pantryList.collectAsStateWithLifecycle()
     val activeProfileDisplayName = localizedProfileName(userProfile.activeProfileId, userProfile.activeProfileName)
 
-    var showSplash by remember { mutableStateOf(true) }
+    var showSplash by rememberSaveable { mutableStateOf(true) }
 
-    LaunchedEffect(Unit) {
-        delay(1350)
-        showSplash = false
+    LaunchedEffect(showSplash) {
+        if (showSplash) {
+            delay(1350)
+            showSplash = false
+        }
     }
 
     // Handle system back navigation to return to Scanner screen if on secondary tabs or detail
@@ -496,6 +502,13 @@ fun NutriLensApp(
                         onDismissBanner = { viewModel.dismissHomeBanner() },
                         isSupporter = userProfile.isSupporter,
                         isSplashVisible = showSplash,
+                        cameraPromptHandled = uiState.cameraPromptHandled,
+                        notifPromptRequested = uiState.notifPromptRequested,
+                        isCameraPermanentlyDenied = uiState.isCameraPermanentlyDenied,
+                        onCameraPermissionResult = { granted, permanentlyDenied ->
+                            viewModel.onCameraPermissionResult(granted, permanentlyDenied)
+                        },
+                        onNotifPromptRequested = { viewModel.onNotifPromptRequested() },
                         modifier = Modifier.fillMaxSize()
                     )
                 }
@@ -563,7 +576,7 @@ fun NutriLensApp(
 
                 is ScreenDestination.History -> {
                     HistoryScreen(
-                        products = recentHistoryProducts,
+                        products = historyProducts,
                         currentFilter = uiState.historyFilter,
                         searchQuery = uiState.searchQuery,
                         onFilterChange = { filter -> viewModel.setHistoryFilter(filter) },

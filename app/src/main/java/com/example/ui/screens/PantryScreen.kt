@@ -293,6 +293,13 @@ fun PantryScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     FilterChip(
+                        selected = currentFilter == PantryFilter.ALL,
+                        onClick = { currentFilter = PantryFilter.ALL },
+                        label = { Text("${stringResource(R.string.filter_all)} (${pantryItems.size})") },
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.testTag("filter_chip_all")
+                    )
+                    FilterChip(
                         selected = currentFilter == PantryFilter.ACTIVE,
                         onClick = { currentFilter = PantryFilter.ACTIVE },
                         label = { Text("${stringResource(R.string.filter_active)} ($activeCount)") },
@@ -673,12 +680,8 @@ private fun PantryItemCard(
     }
 }
 
-private val pantryDateFormatter = ThreadLocal.withInitial {
-    SimpleDateFormat("MMM d, yyyy", Locale.getDefault())
-}
-
 private fun formatDate(timestamp: Long): String {
-    return pantryDateFormatter.get()?.format(Date(timestamp)).orEmpty()
+    return SimpleDateFormat("MMM d, yyyy", Locale.getDefault()).format(Date(timestamp))
 }
 
 private tailrec fun Context.findPantryActivity(): Activity? = when (this) {

@@ -31,5 +31,6 @@ data class ScannedProductEntity(
     val quantity: String?,
     val servingSize: String?,
     val scannedAt: Long = System.currentTimeMillis(),
-    val isFavorite: Boolean = false
+    val isFavorite: Boolean = false,
+    val categoriesTagsRaw: String = ""
 )

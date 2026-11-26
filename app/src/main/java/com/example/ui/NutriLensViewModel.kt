@@ -30,8 +30,12 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 sealed class ScreenDestination {
@@ -53,6 +57,18 @@ enum class HistoryFilter {
     CLEAN_SAFE // Clean items with no allergen or diet alerts
 }
 
+private data class DietaryCriteriaKey(
+    val activeProfileId: String,
+    val monitoredAllergens: Set<String>,
+    val isVegan: Boolean,
+    val isVegetarian: Boolean,
+    val isGlutenFree: Boolean,
+    val customAvoidKeywords: Set<String>,
+    val avoidPalmOil: Boolean,
+    val avoidNova4UltraProcessed: Boolean,
+    val avoidHighRiskAdditives: Boolean
+)
+
 data class ScannerUiState(
     val currentDestination: ScreenDestination = ScreenDestination.Scanner,
     val selectedProduct: Product? = null,
@@ -67,7 +83,10 @@ data class ScannerUiState(
     val showManualInputDialog: Boolean = false,
     val showDonationDialog: Boolean = false,
     val historyFilter: HistoryFilter = HistoryFilter.ALL,
-    val searchQuery: String = ""
+    val searchQuery: String = "",
+    val cameraPromptHandled: Boolean = false,
+    val notifPromptRequested: Boolean = false,
+    val isCameraPermanentlyDenied: Boolean = false
 )
 
 class NutriLensViewModel(application: Application) : AndroidViewModel(application) {
@@ -142,15 +161,39 @@ class NutriLensViewModel(application: Application) : AndroidViewModel(applicatio
                 }
             }
         }
-        // Reactively keep warnings, healthier alternatives, and pantry reminder schedule in sync with profile
+        // Sync JobScheduler only when pantryRemindersEnabled actually changes (avoids resetting periodic job on every scan)
         viewModelScope.launch {
-            userProfile.collect { profile ->
-                PantryReminderScheduler.syncSchedule(getApplication(), profile.pantryRemindersEnabled)
-                val currentProd = _uiState.value.selectedProduct ?: return@collect
-                val updatedWarnings = HealthAnalyzer.evaluate(currentProd, profile)
-                _uiState.value = _uiState.value.copy(productWarnings = updatedWarnings)
-                loadBetterAlternatives(currentProd, profile)
-            }
+            userProfile
+                .map { it.pantryRemindersEnabled }
+                .distinctUntilChanged()
+                .collect { enabled ->
+                    PantryReminderScheduler.syncSchedule(getApplication(), enabled)
+                }
+        }
+        // Re-evaluate warnings & healthier swaps ONLY when dietary profile criteria change (not on operation count / banner ticks)
+        viewModelScope.launch {
+            userProfile
+                .map { profile ->
+                    DietaryCriteriaKey(
+                        activeProfileId = profile.activeProfileId,
+                        monitoredAllergens = profile.monitoredAllergens,
+                        isVegan = profile.isVegan,
+                        isVegetarian = profile.isVegetarian,
+                        isGlutenFree = profile.isGlutenFree,
+                        customAvoidKeywords = profile.customAvoidKeywords,
+                        avoidPalmOil = profile.avoidPalmOil,
+                        avoidNova4UltraProcessed = profile.avoidNova4UltraProcessed,
+                        avoidHighRiskAdditives = profile.avoidHighRiskAdditives
+                    ) to profile
+                }
+                .distinctUntilChanged { old, new -> old.first == new.first }
+                .drop(1)
+                .collect { (_, profile) ->
+                    val currentProd = _uiState.value.selectedProduct ?: return@collect
+                    val updatedWarnings = HealthAnalyzer.evaluate(currentProd, profile)
+                    _uiState.update { it.copy(productWarnings = updatedWarnings) }
+                    loadBetterAlternatives(currentProd, profile)
+                }
         }
     }
 
@@ -171,56 +214,88 @@ class NutriLensViewModel(application: Application) : AndroidViewModel(applicatio
                 backStack.add(destination)
             }
         }
-        _uiState.value = _uiState.value.copy(
-            currentDestination = destination,
-            errorMessage = null
-        )
+        _uiState.update {
+            it.copy(
+                currentDestination = destination,
+                errorMessage = null
+            )
+        }
     }
 
     fun navigateBack() {
-        if (backStack.size > 1) {
+        val previous = if (backStack.size > 1) {
             backStack.removeAt(backStack.lastIndex)
-            val previous = backStack.last()
-            _uiState.value = _uiState.value.copy(
-                currentDestination = previous,
-                errorMessage = null
-            )
+            backStack.last()
         } else {
-            _uiState.value = _uiState.value.copy(
-                currentDestination = ScreenDestination.Scanner,
+            ScreenDestination.Scanner
+        }
+
+        if (previous is ScreenDestination.ProductDetail &&
+            _uiState.value.selectedProduct?.barcode != previous.barcode
+        ) {
+            loadProduct(
+                barcode = previous.barcode,
+                forceRefresh = false,
+                isNewScan = false,
+                pushToBackStack = false
+            )
+            return
+        }
+
+        _uiState.update {
+            it.copy(
+                currentDestination = previous,
                 errorMessage = null
             )
         }
     }
 
     fun toggleTorch() {
-        _uiState.value = _uiState.value.copy(isTorchEnabled = !_uiState.value.isTorchEnabled)
+        _uiState.update { it.copy(isTorchEnabled = !it.isTorchEnabled) }
+    }
+
+    fun onCameraPermissionResult(granted: Boolean, permanentlyDenied: Boolean) {
+        _uiState.update {
+            it.copy(
+                cameraPromptHandled = true,
+                isCameraPermanentlyDenied = if (granted) false else permanentlyDenied
+            )
+        }
+    }
+
+    fun onNotifPromptRequested() {
+        _uiState.update { it.copy(notifPromptRequested = true) }
     }
 
     fun setManualInputDialogVisible(visible: Boolean) {
-        _uiState.value = _uiState.value.copy(showManualInputDialog = visible)
+        _uiState.update { it.copy(showManualInputDialog = visible) }
     }
 
     fun setHistoryFilter(filter: HistoryFilter) {
-        _uiState.value = _uiState.value.copy(historyFilter = filter)
+        _uiState.update { it.copy(historyFilter = filter) }
     }
 
     fun setSearchQuery(query: String) {
-        _uiState.value = _uiState.value.copy(searchQuery = query)
+        _uiState.update { it.copy(searchQuery = query) }
     }
 
     fun scanBarcode(barcode: String) {
         val clean = barcode.trim()
         if (clean.isBlank()) return
-        loadProduct(clean)
+        loadProduct(clean, forceRefresh = false, isNewScan = true)
     }
 
-    fun loadProduct(barcode: String, forceRefresh: Boolean = false) {
+    fun loadProduct(
+        barcode: String,
+        forceRefresh: Boolean = false,
+        isNewScan: Boolean = false,
+        pushToBackStack: Boolean = true
+    ) {
         val cleanBarcode = barcode.trim()
         if (cleanBarcode.isBlank()) return
 
         val detailDest = ScreenDestination.ProductDetail(cleanBarcode)
-        if (backStack.lastOrNull() != detailDest) {
+        if (pushToBackStack && backStack.lastOrNull() != detailDest) {
             backStack.add(detailDest)
         }
 
@@ -235,15 +310,17 @@ class NutriLensViewModel(application: Application) : AndroidViewModel(applicatio
             null
         }
 
-        _uiState.value = _uiState.value.copy(
-            isLoading = true,
-            selectedProduct = preservedProduct,
-            productWarnings = if (preservedProduct != null) _uiState.value.productWarnings else emptyList(),
-            betterAlternatives = emptyList(),
-            isLoadingAlternatives = false,
-            errorMessage = null,
-            currentDestination = detailDest
-        )
+        _uiState.update {
+            it.copy(
+                isLoading = true,
+                selectedProduct = preservedProduct,
+                productWarnings = if (preservedProduct != null) it.productWarnings else emptyList(),
+                betterAlternatives = emptyList(),
+                isLoadingAlternatives = false,
+                errorMessage = null,
+                currentDestination = detailDest
+            )
+        }
 
         loadProductJob = viewModelScope.launch {
             repository.getProductFlow(cleanBarcode, forceRefresh).collect { result ->
@@ -251,31 +328,36 @@ class NutriLensViewModel(application: Application) : AndroidViewModel(applicatio
                     val profile = userProfile.value
                     val warnings = HealthAnalyzer.evaluate(product, profile)
 
-                    // Trigger system notification alert if critical dietary warnings exist
-                    SafetyNotificationManager.sendDietaryAlertNotification(
-                        context = getApplication(),
-                        product = product,
-                        warnings = warnings
-                    )
+                    var triggerMilestone = false
+                    if (isNewScan) {
+                        // Trigger system notification alert if critical dietary warnings exist
+                        SafetyNotificationManager.sendDietaryAlertNotification(
+                            context = getApplication(),
+                            product = product,
+                            warnings = warnings
+                        )
 
-                    // Automatically add scanned product to pantry management list
-                    pantryRepository.addProductToPantry(product)
+                        // Automatically add newly scanned product to pantry management list
+                        pantryRepository.addProductToPantry(product)
 
-                    // Increment verified operations counter and check Value-Realization milestone
-                    val updatedOpsCount = preferencesRepository.incrementOperationsCount()
-                    val milestoneProfile = profile.copy(successfulOperationsCount = updatedOpsCount)
-                    val triggerMilestone = milestoneProfile.shouldTriggerMilestonePrompt
-                    if (triggerMilestone) {
-                        preferencesRepository.recordAutoPromptShown()
+                        // Increment verified operations counter and check Value-Realization milestone
+                        val updatedOpsCount = preferencesRepository.incrementOperationsCount()
+                        val milestoneProfile = profile.copy(successfulOperationsCount = updatedOpsCount)
+                        triggerMilestone = milestoneProfile.shouldTriggerMilestonePrompt
+                        if (triggerMilestone) {
+                            preferencesRepository.recordAutoPromptShown()
+                        }
                     }
 
-                    _uiState.value = _uiState.value.copy(
-                        isLoading = false,
-                        selectedProduct = product,
-                        productWarnings = warnings,
-                        showDonationDialog = if (triggerMilestone) true else _uiState.value.showDonationDialog,
-                        errorMessage = null
-                    )
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            selectedProduct = product,
+                            productWarnings = warnings,
+                            showDonationDialog = if (triggerMilestone) true else it.showDonationDialog,
+                            errorMessage = null
+                        )
+                    }
 
                     loadBetterAlternatives(product, profile)
                 }.onFailure { err ->
@@ -289,10 +371,12 @@ class NutriLensViewModel(application: Application) : AndroidViewModel(applicatio
                         )
                         else -> err.message ?: app.getString(R.string.error_product_fetch_failed)
                     }
-                    _uiState.value = _uiState.value.copy(
-                        isLoading = false,
-                        errorMessage = localizedError
-                    )
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = localizedError
+                        )
+                    }
                 }
             }
         }
@@ -301,14 +385,18 @@ class NutriLensViewModel(application: Application) : AndroidViewModel(applicatio
     private fun loadBetterAlternatives(product: Product, profile: UserProfile) {
         alternativesJob?.cancel()
         alternativesJob = viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoadingAlternatives = true)
+            _uiState.update { it.copy(isLoadingAlternatives = true) }
             val alternatives = repository.getHealthierAlternatives(product, profile)
             // Only apply if this product is still selected
-            if (_uiState.value.selectedProduct?.barcode == product.barcode) {
-                _uiState.value = _uiState.value.copy(
-                    betterAlternatives = alternatives,
-                    isLoadingAlternatives = false
-                )
+            _uiState.update { current ->
+                if (current.selectedProduct?.barcode == product.barcode) {
+                    current.copy(
+                        betterAlternatives = alternatives,
+                        isLoadingAlternatives = false
+                    )
+                } else {
+                    current
+                }
             }
         }
     }
@@ -329,27 +417,29 @@ class NutriLensViewModel(application: Application) : AndroidViewModel(applicatio
                     fromAlternatives ?: fromHistory
                 }
             }
-            _uiState.value = _uiState.value.copy(
-                compareLeftProduct = left,
-                compareRightProduct = right
-            )
+            _uiState.update {
+                it.copy(
+                    compareLeftProduct = left,
+                    compareRightProduct = right
+                )
+            }
         }
     }
 
     fun selectCompareProduct(isLeft: Boolean, product: Product) {
-        _uiState.value = if (isLeft) {
-            _uiState.value.copy(compareLeftProduct = product)
-        } else {
-            _uiState.value.copy(compareRightProduct = product)
+        _uiState.update {
+            if (isLeft) it.copy(compareLeftProduct = product)
+            else it.copy(compareRightProduct = product)
         }
     }
 
     fun swapCompareProducts() {
-        val current = _uiState.value
-        _uiState.value = current.copy(
-            compareLeftProduct = current.compareRightProduct,
-            compareRightProduct = current.compareLeftProduct
-        )
+        _uiState.update { current ->
+            current.copy(
+                compareLeftProduct = current.compareRightProduct,
+                compareRightProduct = current.compareLeftProduct
+            )
+        }
     }
 
     private suspend fun resolveProductForCompare(barcode: String): Product? {
@@ -370,8 +460,24 @@ class NutriLensViewModel(application: Application) : AndroidViewModel(applicatio
         viewModelScope.launch {
             repository.saveCustomProduct(product)
             pantryRepository.addProductToPantry(product)
-            preferencesRepository.incrementOperationsCount()
-            loadProduct(product.barcode)
+            val profile = userProfile.value
+            val warnings = HealthAnalyzer.evaluate(product, profile)
+            SafetyNotificationManager.sendDietaryAlertNotification(
+                context = getApplication(),
+                product = product,
+                warnings = warnings
+            )
+            val updatedOpsCount = preferencesRepository.incrementOperationsCount()
+            val triggerMilestone = profile.copy(successfulOperationsCount = updatedOpsCount).shouldTriggerMilestonePrompt
+            if (triggerMilestone) {
+                preferencesRepository.recordAutoPromptShown()
+                _uiState.update { it.copy(showDonationDialog = true) }
+            }
+            // Replace IngredientAnalyzer on back stack so pressing Back returns cleanly to previous screen
+            if (backStack.lastOrNull() is ScreenDestination.IngredientAnalyzer && backStack.size > 1) {
+                backStack.removeAt(backStack.lastIndex)
+            }
+            loadProduct(product.barcode, forceRefresh = false, isNewScan = false)
         }
     }
 
@@ -402,7 +508,7 @@ class NutriLensViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     fun setDonationDialogVisible(visible: Boolean) {
-        _uiState.value = _uiState.value.copy(showDonationDialog = visible)
+        _uiState.update { it.copy(showDonationDialog = visible) }
     }
 
     fun dismissHomeBanner() {
@@ -414,14 +520,14 @@ class NutriLensViewModel(application: Application) : AndroidViewModel(applicatio
     fun dismissAutoPromptDialog() {
         viewModelScope.launch {
             preferencesRepository.dismissAutoPromptDialog()
-            _uiState.value = _uiState.value.copy(showDonationDialog = false)
+            _uiState.update { it.copy(showDonationDialog = false) }
         }
     }
 
     fun markAsSupporter(isSupporter: Boolean = true) {
         viewModelScope.launch {
             preferencesRepository.markAsSupporter(isSupporter)
-            _uiState.value = _uiState.value.copy(showDonationDialog = false)
+            _uiState.update { it.copy(showDonationDialog = false) }
         }
     }
 
@@ -435,10 +541,12 @@ class NutriLensViewModel(application: Application) : AndroidViewModel(applicatio
         viewModelScope.launch {
             val newFav = !product.isFavorite
             repository.toggleFavorite(product.barcode, newFav)
-            if (_uiState.value.selectedProduct?.barcode == product.barcode) {
-                _uiState.value = _uiState.value.copy(
-                    selectedProduct = _uiState.value.selectedProduct?.copy(isFavorite = newFav)
-                )
+            _uiState.update { current ->
+                if (current.selectedProduct?.barcode == product.barcode) {
+                    current.copy(selectedProduct = current.selectedProduct.copy(isFavorite = newFav))
+                } else {
+                    current
+                }
             }
         }
     }

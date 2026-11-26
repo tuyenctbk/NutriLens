@@ -1152,7 +1152,7 @@ private fun getTrafficLight(value: Double?, lowThreshold: Double, highThreshold:
     if (value == null) return TrafficLight.NONE
     return when {
         value <= lowThreshold -> TrafficLight.LOW
-        value > highThreshold -> TrafficLight.HIGH
+        value >= highThreshold -> TrafficLight.HIGH
         else -> TrafficLight.MODERATE
     }
 }

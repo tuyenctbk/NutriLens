@@ -17,7 +17,7 @@
     <string name="nav_dashboard">Panel</string>
     <string name="nav_profile">Perfil</string>
     <string name="product_analysis">Análisis del Producto</string>
-    <string name="analyzing_msg">Analizando aditivos y alérgenos...</string>
+    <string name="analyzing_msg">Analizando aditivos y alérgenos…</string>
     <string name="consulting_db">Consultando Open Food Facts y caché Room</string>
     <string name="product_not_found">Producto No Encontrado</string>
     <string name="back_to_scanner">Volver al Escáner</string>
@@ -32,7 +32,7 @@
     <string name="nutritional_values">Valores Nutricionales (por 100g)</string>
     <string name="scan_history_title">Historial de Escaneos</string>
     <string name="scan_history_subtitle">artículos guardados sin conexión en Room</string>
-    <string name="search_history_placeholder">Buscar por nombre, marca, alérgeno o E-número...</string>
+    <string name="search_history_placeholder">Buscar por nombre, marca, alérgeno o E-número…</string>
     <string name="filter_all">Todos</string>
     <string name="filter_favorites">⭐ Favoritos</string>
     <string name="filter_warnings">⚠️ Advertencias</string>
@@ -76,7 +76,7 @@
     <string name="dashboard_empty_desc">Escanea productos para visualizar azúcares, grasas saturadas y sal frente a las directrices de la OMS.</string>
     <string name="select_product_analyze">Seleccionar Producto:</string>
     <string name="inspect">Inspeccionar</string>
-    <string name="daily_intake_title">1. Ingesta Diaria Recomendada (% VRN por 100g)</string>
+    <string name="daily_intake_title" formatted="false">1. Ingesta Diaria Recomendada (% VRN por 100g)</string>
     <string name="daily_intake_subtitle">Calculado respecto a los máximos diarios de 2,000 kcal de la OMS:</string>
     <string name="macro_composition_title">2. Relación de Macronutrientes</string>
     <string name="macro_composition_subtitle">Proporción de Carbohidratos, Grasas y Proteínas:</string>
@@ -111,7 +111,7 @@
     <string name="pantry_subtitle_empty">No hay artículos en la despensa</string>
     <string name="pantry_subtitle_count">%d artículos en la despensa</string>
     <string name="clear_pantry_desc">Vaciar despensa</string>
-    <string name="pantry_search_placeholder">Buscar artículos por nombre, marca o código...</string>
+    <string name="pantry_search_placeholder">Buscar artículos por nombre, marca o código…</string>
     <string name="clear_search">Borrar búsqueda</string>
     <string name="filter_active">Activos</string>
     <string name="filter_expiring_soon">Por Caducar</string>
@@ -137,12 +137,12 @@
     <string name="gauge_salt">Sal / Sodio</string>
     <string name="gauge_fiber">Fibra Dietética (Meta)</string>
     <string name="gauge_protein">Proteínas (Meta)</string>
-    <string name="warning_sugar_exceeds">🚨 ¡Supera el 45% del límite diario de azúcar en 100g!</string>
+    <string name="warning_sugar_exceeds" formatted="false">🚨 ¡Supera el 45% del límite diario de azúcar en 100g!</string>
     <string name="warning_sat_fat_high">⚠️ Alto contenido de grasas saturadas</string>
     <string name="warning_salt_high">⚠️ Alto contenido de sal (&gt;1.5g / 100g)</string>
     <string name="splash_tagline">Escáner Inteligente de Alimentos y Alérgenos</string>
     <string name="donation_title">Apoyar el Desarrollo Independiente</string>
-    <string name="donation_subtitle">NutriLens es 100% libre de anuncios, privado y con tecnología de Open Food Facts.</string>
+    <string name="donation_subtitle" formatted="false">NutriLens es 100% libre de anuncios, privado y con tecnología de Open Food Facts.</string>
     <string name="donation_google_play">Colaborador Google Play (1-Tap)</string>
     <string name="donation_paypal">PayPal y Código QR en Vivo</string>
     <string name="donation_kofi">Propina en Ko-fi</string>
@@ -154,17 +154,17 @@
     <string name="donation_link_copied">¡Enlace de donación copiado al portapapeles!</string>
     <string name="donation_active_supporter">Colaborador Activo</string>
     <string name="donation_thank_you">¡Gracias por apoyar el software independiente de seguridad alimentaria!</string>
-    <string name="home_donation_banner">¿Disfrutas de NutriLens? ¡Apoya nuestro proyecto 100% sin anuncios y sin conexión!</string>
+    <string name="home_donation_banner" formatted="false">¿Disfrutas de NutriLens? ¡Apoya nuestro proyecto 100% sin anuncios y sin conexión!</string>
     <string name="support_dev_button">Apoyar App</string>
     <string name="post_scan_support_prompt">¿Te resultó útil? ¡Considera invitarle un café al desarrollador!</string>
     <string name="support_section_title">5. Apoyar el Desarrollo Independiente</string>
-    <string name="support_section_desc">Ayuda a mantener NutriLens 100% sin publicidad y centrado en la privacidad.</string>
+    <string name="support_section_desc" formatted="false">Ayuda a mantener NutriLens 100% sin publicidad y centrado en la privacidad.</string>
     <string name="donation_tab_google_play">Google Play</string>
     <string name="donation_tab_paypal">PayPal QR</string>
     <string name="donation_tab_kofi">Ko-fi</string>
     <string name="donation_processed_toast">¡Gracias! %1$s procesado.</string>
     <string name="donation_kofi_card_title">☕ Apoya a NutriLens en Ko-fi</string>
-    <string name="donation_kofi_card_desc">Ayuda a mantener la seguridad alimentaria 100% sin anuncios y sin conexión para todos.</string>
+    <string name="donation_kofi_card_desc" formatted="false">Ayuda a mantener la seguridad alimentaria 100% sin anuncios y sin conexión para todos.</string>
     <string name="donation_kofi_button">Visitar página de Ko-fi</string>
     <string name="donation_paypal_clip_label">Enlace de PayPal</string>
     <string name="donation_kofi_clip_label">Enlace de Ko-fi</string>
@@ -181,7 +181,7 @@
     <string name="contains_palm_oil">Contiene Aceite de Palma</string>
     <string name="may_contain_palm_oil">Puede Contener Palma</string>
     <string name="palm_oil_unknown">Aceite de Palma Desconocido</string>
-    <string name="diet_vegan_100">100% Vegano</string>
+    <string name="diet_vegan_100" formatted="false">100% Vegano</string>
     <string name="diet_non_vegan">No Vegano</string>
     <string name="diet_maybe_vegan">Quizás Vegano</string>
     <string name="diet_vegan_unknown">Vegano Desconocido</string>
@@ -323,7 +323,7 @@
     <string name="support_google_play_desc">Apoyo rápido y seguro con 1 toque mediante Google Play Billing. Activa automáticamente tu insignia permanente de colaborador.</string>
     <string name="support_paypal_desc">Escanea el código QR en vivo con tu cámara o la app de PayPal, o abre el enlace directamente en tu navegador.</string>
     <string name="support_restore_purchases">Restaurar compras</string>
-    <string name="support_footer_note">Las donaciones son totalmente opcionales. Todas las funciones de escáner, alérgenos y despensa siguen siendo 100 % gratuitas y sin anuncios.</string>
+    <string name="support_footer_note" formatted="false">Las donaciones son totalmente opcionales. Todas las funciones de escáner, alérgenos y despensa siguen siendo 100 % gratuitas y sin anuncios.</string>
     <string name="billing_status_ready">Play Billing listo</string>
     <string name="billing_status_connecting">Conectando con Play…</string>
     <string name="billing_status_unavailable">Play Store sin conexión</string>

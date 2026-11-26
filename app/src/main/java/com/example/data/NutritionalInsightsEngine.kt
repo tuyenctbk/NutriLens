@@ -124,12 +124,17 @@ object NutritionalInsightsEngine {
         val carbsKcal = carbsVal * 4.0
         val fatKcal = fatVal * 9.0
         val proteinKcal = proteinVal * 4.0
-        val macroKcalTotal = (carbsKcal + fatKcal + proteinKcal).coerceAtLeast(0.01)
-        val effectiveKcal = kcal ?: macroKcalTotal
+        val rawMacroKcal = carbsKcal + fatKcal + proteinKcal
+        val effectiveKcal = kcal ?: rawMacroKcal
 
-        val carbsPct = ((carbsKcal / macroKcalTotal) * 100.0).roundToInt().coerceIn(0, 100)
-        val fatPct = ((fatKcal / macroKcalTotal) * 100.0).roundToInt().coerceIn(0, 100)
-        val proteinPct = (100 - carbsPct - fatPct).coerceIn(0, 100)
+        val (carbsPct, fatPct, proteinPct) = if (rawMacroKcal > 0.0) {
+            val c = ((carbsKcal / rawMacroKcal) * 100.0).roundToInt().coerceIn(0, 100)
+            val f = ((fatKcal / rawMacroKcal) * 100.0).roundToInt().coerceIn(0, 100)
+            val p = (100 - c - f).coerceIn(0, 100)
+            Triple(c, f, p)
+        } else {
+            Triple(0, 0, 0)
+        }
 
         var score = 72
         val insights = mutableListOf<NutritionalInsight>()

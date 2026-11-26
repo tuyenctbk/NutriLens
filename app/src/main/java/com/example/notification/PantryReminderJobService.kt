@@ -6,15 +6,18 @@ import android.app.job.JobScheduler
 import android.app.job.JobService
 import android.content.ComponentName
 import android.content.Context
+import android.os.Build
 import com.example.data.local.AppDatabase
 import com.example.data.local.UserPreferencesRepository
 import com.example.model.PantryItem
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Native Android JobService running a lightweight daily background check for Pantry items
@@ -23,9 +26,11 @@ import kotlinx.coroutines.launch
 class PantryReminderJobService : JobService() {
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private var activeJob: Job? = null
 
     override fun onStartJob(params: JobParameters?): Boolean {
-        serviceScope.launch {
+        activeJob?.cancel()
+        activeJob = serviceScope.launch {
             try {
                 PantryReminderScheduler.checkAndNotifyExpiringItems(applicationContext)
             } finally {
@@ -36,8 +41,14 @@ class PantryReminderJobService : JobService() {
     }
 
     override fun onStopJob(params: JobParameters?): Boolean {
-        serviceScope.cancel()
+        activeJob?.cancel()
+        activeJob = null
         return true
+    }
+
+    override fun onDestroy() {
+        serviceScope.cancel()
+        super.onDestroy()
     }
 }
 
@@ -53,24 +64,30 @@ object PantryReminderScheduler {
             return
         }
 
+        // Preserve existing periodic schedule so daily app opens do not reset the 24h timer
+        if (scheduler.getPendingJob(JOB_ID) != null) {
+            return
+        }
+
         val component = ComponentName(context, PantryReminderJobService::class.java)
-        val jobInfo = JobInfo.Builder(JOB_ID, component)
+        val builder = JobInfo.Builder(JOB_ID, component)
             .setPeriodic(ONE_DAY_MS)
-            .setRequiresBatteryNotLow(true)
-            .build()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            builder.setRequiresBatteryNotLow(true)
+        }
 
         try {
-            scheduler.schedule(jobInfo)
+            scheduler.schedule(builder.build())
         } catch (_: Exception) {
             // Gracefully ignore if job scheduling is restricted on specific OEM builds
         }
     }
 
-    suspend fun checkAndNotifyExpiringItems(context: Context, forceCheck: Boolean = false): Int {
+    suspend fun checkAndNotifyExpiringItems(context: Context, forceCheck: Boolean = false): Int = withContext(Dispatchers.IO) {
         val appContext = context.applicationContext
         val prefs = UserPreferencesRepository(appContext)
         val profile = prefs.userProfileFlow.first()
-        if (!forceCheck && !profile.pantryRemindersEnabled) return 0
+        if (!forceCheck && !profile.pantryRemindersEnabled) return@withContext 0
 
         val dao = AppDatabase.getDatabase(appContext).pantryDao()
         val now = System.currentTimeMillis()
@@ -92,8 +109,8 @@ object PantryReminderScheduler {
             }
 
         if (expiringItems.isNotEmpty()) {
-            SafetyNotificationManager.sendPantryExpirationNotification(context, expiringItems)
+            SafetyNotificationManager.sendPantryExpirationNotification(appContext, expiringItems)
         }
-        return expiringItems.size
+        expiringItems.size
     }
 }

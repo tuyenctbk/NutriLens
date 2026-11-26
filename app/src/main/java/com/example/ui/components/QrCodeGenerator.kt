@@ -90,7 +90,6 @@ object QrCodeGenerator {
         placeCodewords(baseModules, isFunction, allCodewords)
 
         // Evaluate all 8 masks and pick the lowest penalty for crisp scan reliability
-        var bestMask = 0
         var bestPenalty = Int.MAX_VALUE
         var bestMatrix = baseModules
 
@@ -101,12 +100,9 @@ object QrCodeGenerator {
             val penalty = computePenalty(candidate)
             if (penalty < bestPenalty) {
                 bestPenalty = penalty
-                bestMask = mask
                 bestMatrix = candidate
             }
         }
-        // Format bits already drawn on bestMatrix for bestMask
-        val _unused = bestMask
         return bestMatrix
     }
 

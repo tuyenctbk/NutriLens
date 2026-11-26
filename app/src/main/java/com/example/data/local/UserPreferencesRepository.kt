@@ -264,9 +264,11 @@ class UserPreferencesRepository(private val context: Context) {
         val clean = keyword.trim()
         if (clean.isBlank()) return
         updateActiveProfile { profile ->
-            val updated = profile.customAvoidKeywords.toMutableSet()
-            updated.add(clean)
-            profile.copy(customAvoidKeywords = updated.toList())
+            if (profile.customAvoidKeywords.any { it.equals(clean, ignoreCase = true) }) {
+                profile
+            } else {
+                profile.copy(customAvoidKeywords = profile.customAvoidKeywords + clean)
+            }
         }
     }
 

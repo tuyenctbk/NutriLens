@@ -479,4 +479,106 @@ class NutriLensUnitTest {
         )
         assertTrue("Vegan dairy-free bar should produce zero DANGER warnings", warnings.none { it.severity == WarningSeverity.DANGER })
     }
+
+    @Test
+    fun testPluralAllergensDetectedAndTreeNutsDoesNotFalseTriggerOnPeanuts() {
+        val peanutOnlyProduct = Product(
+            barcode = "111000111",
+            name = "Roasted Salted Peanuts",
+            brand = "NutCo",
+            imageUrl = null,
+            nutriscoreGrade = "b",
+            novaGroup = 2,
+            ecoscoreGrade = "b",
+            ingredientsText = "Roasted peanuts, sea salt.",
+            additives = emptyList(),
+            allergens = listOf("Peanuts"),
+            traces = emptyList(),
+            palmOilStatus = PalmOilStatus.FREE,
+            veganStatus = DietStatus.SUITABLE,
+            vegetarianStatus = DietStatus.SUITABLE,
+            nutriments = NutrimentsInfo()
+            , quantity = "200g", servingSize = "30g"
+        )
+
+        // Monitoring ONLY Tree Nuts must NOT false-trigger on Peanuts
+        val treeNutWarnings = HealthAnalyzer.evaluate(
+            peanutOnlyProduct,
+            UserProfile(monitoredAllergens = setOf("Tree Nuts"))
+        )
+        assertTrue(
+            "Peanuts must not trigger Tree Nuts false positive",
+            treeNutWarnings.none { it.iconType == "allergen" }
+        )
+
+        // Plural "peanuts" in ingredients must trigger Peanuts allergen even when allergens tag list is empty
+        val unlabeledPeanuts = peanutOnlyProduct.copy(allergens = emptyList())
+        val peanutWarnings = HealthAnalyzer.evaluate(
+            unlabeledPeanuts,
+            UserProfile(monitoredAllergens = setOf("Peanuts"))
+        )
+        assertTrue(
+            "Plural 'peanuts' in ingredients must trigger Peanuts DANGER alert",
+            peanutWarnings.any { it.severity == WarningSeverity.DANGER && it.allergenArgs.contains("Peanuts") }
+        )
+
+        // Plural "eggs" and "almonds" in Ingredient Label Analyzer must be detected and marked non-vegan
+        val eggAlmondCake = HealthAnalyzer.buildSyntheticProductFromIngredients(
+            name = "Almond Sponge",
+            brand = "Bakery",
+            ingredientsText = "Almonds, whole eggs, sugar, salt"
+        )
+        assertTrue("Should detect Tree Nuts from plural 'almonds'", eggAlmondCake.allergens.contains("Tree Nuts"))
+        assertTrue("Should detect Eggs from plural 'eggs'", eggAlmondCake.allergens.contains("Eggs"))
+        assertEquals(DietStatus.NOT_SUITABLE, eggAlmondCake.veganStatus)
+    }
+
+    @Test
+    fun testVeganProfileFlagsNonVegetarianWhenVeganStatusUnknown() {
+        val meatProduct = Product(
+            barcode = "222000222",
+            name = "Chicken Broth",
+            brand = "SoupCo",
+            imageUrl = null,
+            nutriscoreGrade = "b",
+            novaGroup = 3,
+            ecoscoreGrade = "c",
+            ingredientsText = "Water, chicken stock, salt",
+            additives = emptyList(),
+            allergens = emptyList(),
+            traces = emptyList(),
+            palmOilStatus = PalmOilStatus.FREE,
+            veganStatus = DietStatus.UNKNOWN,
+            vegetarianStatus = DietStatus.NOT_SUITABLE,
+            nutriments = NutrimentsInfo(),
+            quantity = "500ml",
+            servingSize = "250ml"
+        )
+        val warnings = HealthAnalyzer.evaluate(meatProduct, UserProfile(isVegan = true, monitoredAllergens = emptySet()))
+        assertTrue(
+            "Vegan profile must flag products with vegetarianStatus=NOT_SUITABLE even when veganStatus=UNKNOWN",
+            warnings.any { it.severity == WarningSeverity.DANGER && it.iconType == "vegan" }
+        )
+    }
+
+    @Test
+    fun testNutritionalInsightsZeroGramsKcalOnlyDoesNotReport100PercentProtein() {
+        val kcalOnly = NutrimentsInfo(energyKcal = 120.0)
+        val summary = com.example.data.NutritionalInsightsEngine.analyze(kcalOnly)
+        assertTrue(summary.hasMacroData)
+        assertEquals(0, summary.carbsCaloriePct)
+        assertEquals(0, summary.fatCaloriePct)
+        assertEquals(0, summary.proteinCaloriePct)
+    }
+
+    @Test
+    fun testAdditivesDatabaseHandlesNonEnglishPrefixesAndSubLetters() {
+        val frenchLecithin = AdditivesDatabase.resolve("fr:e322i")
+        assertEquals("E322I", frenchLecithin.code)
+        assertEquals(AdditiveRisk.SAFE, frenchLecithin.risk)
+
+        val germanAspartame = AdditivesDatabase.resolve("de:e951")
+        assertEquals("E951", germanAspartame.code)
+        assertEquals(AdditiveRisk.HIGH, germanAspartame.risk)
+    }
 }

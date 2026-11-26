@@ -17,7 +17,7 @@
     <string name="nav_dashboard">Dashboard</string>
     <string name="nav_profile">Profil</string>
     <string name="product_analysis">Produktanalyse</string>
-    <string name="analyzing_msg">Analysiere Zusatzstoffe &amp; Allergene...</string>
+    <string name="analyzing_msg">Analysiere Zusatzstoffe &amp; Allergene…</string>
     <string name="consulting_db">Frage Open Food Facts &amp; Room Cache ab</string>
     <string name="product_not_found">Produkt Nicht Gefunden</string>
     <string name="back_to_scanner">Zurück zum Scanner</string>
@@ -32,7 +32,7 @@
     <string name="nutritional_values">Nährwerte (pro 100g)</string>
     <string name="scan_history_title">Scan-Verlauf</string>
     <string name="scan_history_subtitle">offline in Room gespeicherte Artikel</string>
-    <string name="search_history_placeholder">Nach Name, Marke, Allergen oder E-Nummer suchen...</string>
+    <string name="search_history_placeholder">Nach Name, Marke, Allergen oder E-Nummer suchen…</string>
     <string name="filter_all">Alle</string>
     <string name="filter_favorites">⭐ Favoriten</string>
     <string name="filter_warnings">⚠️ Warnungen</string>
@@ -76,7 +76,7 @@
     <string name="dashboard_empty_desc">Scannen Sie Produkte, um Zucker, gesättigte Fettsäuren und Salz im Vergleich zu WHO-Richtlinien zu visualisieren.</string>
     <string name="select_product_analyze">Produkt Auswählen:</string>
     <string name="inspect">Untersuchen</string>
-    <string name="daily_intake_title">1. Empfohlene Tagesdosis (% ETD pro 100g)</string>
+    <string name="daily_intake_title" formatted="false">1. Empfohlene Tagesdosis (% ETD pro 100g)</string>
     <string name="daily_intake_subtitle">Berechnet relativ zu den 2.000 kcal Tageshöchstwerten der WHO:</string>
     <string name="macro_composition_title">2. Makronährstoff-Verhältnis</string>
     <string name="macro_composition_subtitle">Anteil von Kohlenhydraten, Fetten und Proteinen:</string>
@@ -111,7 +111,7 @@
     <string name="pantry_subtitle_empty">Keine Artikel im Vorrat</string>
     <string name="pantry_subtitle_count">%d Artikel im Vorrat</string>
     <string name="clear_pantry_desc">Vorrat leeren</string>
-    <string name="pantry_search_placeholder">Vorrat nach Name, Marke oder Barcode durchsuchen...</string>
+    <string name="pantry_search_placeholder">Vorrat nach Name, Marke oder Barcode durchsuchen…</string>
     <string name="clear_search">Suche löschen</string>
     <string name="filter_active">Aktiv</string>
     <string name="filter_expiring_soon">Bald ablaufend</string>
@@ -137,12 +137,12 @@
     <string name="gauge_salt">Salz / Natrium</string>
     <string name="gauge_fiber">Ballaststoffe (Ziel)</string>
     <string name="gauge_protein">Proteine (Ziel)</string>
-    <string name="warning_sugar_exceeds">🚨 Übersteigt 45% des täglichen Zuckerlimits pro 100g!</string>
+    <string name="warning_sugar_exceeds" formatted="false">🚨 Übersteigt 45% des täglichen Zuckerlimits pro 100g!</string>
     <string name="warning_sat_fat_high">⚠️ Hoher Gehalt an gesättigten Fettsäuren</string>
     <string name="warning_salt_high">⚠️ Hoher Salzgehalt (&gt;1.5g / 100g)</string>
     <string name="splash_tagline">Intelligenter Lebensmittel- und Allergenscanner</string>
     <string name="donation_title">Unabhängige Entwicklung unterstützen</string>
-    <string name="donation_subtitle">NutriLens ist 100% werbefrei, privat und nutzt Open Food Facts.</string>
+    <string name="donation_subtitle" formatted="false">NutriLens ist 100% werbefrei, privat und nutzt Open Food Facts.</string>
     <string name="donation_google_play">Google Play 1-Tap Unterstützer</string>
     <string name="donation_paypal">PayPal &amp; Live-QR-Code</string>
     <string name="donation_kofi">Ko-fi Kaffeekasse</string>
@@ -154,17 +154,17 @@
     <string name="donation_link_copied">Spendenlink in die Zwischenablage kopiert!</string>
     <string name="donation_active_supporter">Aktiver Unterstützer</string>
     <string name="donation_thank_you">Vielen Dank für Ihre Unterstützung unabhängiger Software!</string>
-    <string name="home_donation_banner">Gefällt Ihnen NutriLens? Unterstützen Sie unser 100% werbefreies Projekt!</string>
+    <string name="home_donation_banner" formatted="false">Gefällt Ihnen NutriLens? Unterstützen Sie unser 100% werbefreies Projekt!</string>
     <string name="support_dev_button">App unterstützen</string>
     <string name="post_scan_support_prompt">Hat es Ihnen geholfen? Spendieren Sie dem Entwickler einen Kaffee!</string>
     <string name="support_section_title">5. Unabhängige Entwicklung unterstützen</string>
-    <string name="support_section_desc">Helfen Sie, NutriLens 100% werbefrei und datenschutzfreundlich zu halten.</string>
+    <string name="support_section_desc" formatted="false">Helfen Sie, NutriLens 100% werbefrei und datenschutzfreundlich zu halten.</string>
     <string name="donation_tab_google_play">Google Play</string>
     <string name="donation_tab_paypal">PayPal QR</string>
     <string name="donation_tab_kofi">Ko-fi</string>
     <string name="donation_processed_toast">Vielen Dank! %1$s verarbeitet.</string>
     <string name="donation_kofi_card_title">☕ NutriLens auf Ko-fi unterstützen</string>
-    <string name="donation_kofi_card_desc">Helfen Sie mit, die Lebensmittelsicherheit für alle 100% werbefrei &amp; offline zu halten.</string>
+    <string name="donation_kofi_card_desc" formatted="false">Helfen Sie mit, die Lebensmittelsicherheit für alle 100% werbefrei &amp; offline zu halten.</string>
     <string name="donation_kofi_button">Ko-fi-Seite besuchen</string>
     <string name="donation_paypal_clip_label">PayPal-Link</string>
     <string name="donation_kofi_clip_label">Ko-fi-Link</string>
@@ -181,7 +181,7 @@
     <string name="contains_palm_oil">Enthält Öl/Fett aus Ölpalmen</string>
     <string name="may_contain_palm_oil">Kann Öl aus Ölpalmen enthalten</string>
     <string name="palm_oil_unknown">Palmfett Status unbekannt</string>
-    <string name="diet_vegan_100">100% Vegan</string>
+    <string name="diet_vegan_100" formatted="false">100% Vegan</string>
     <string name="diet_non_vegan">Nicht vegan</string>
     <string name="diet_maybe_vegan">Möglicherweise vegan</string>
     <string name="diet_vegan_unknown">Vegan Status unbekannt</string>
@@ -323,7 +323,7 @@
     <string name="support_google_play_desc">Schnelle, sichere 1-Tap-Unterstützung über Google Play Billing. Aktiviert automatisch dein dauerhaftes Supporter-Abzeichen.</string>
     <string name="support_paypal_desc">Scanne den Live-QR-Code mit deiner Kamera oder PayPal-App oder öffne den Link direkt im Browser.</string>
     <string name="support_restore_purchases">Käufe wiederherstellen</string>
-    <string name="support_footer_note">Spenden sind völlig freiwillig. Alle Kernfunktionen für Barcodes, Allergene und Vorrat bleiben 100 % kostenlos und werbefrei.</string>
+    <string name="support_footer_note" formatted="false">Spenden sind völlig freiwillig. Alle Kernfunktionen für Barcodes, Allergene und Vorrat bleiben 100 % kostenlos und werbefrei.</string>
     <string name="billing_status_ready">Play Billing bereit</string>
     <string name="billing_status_connecting">Verbinde mit Play…</string>
     <string name="billing_status_unavailable">Play Store offline</string>

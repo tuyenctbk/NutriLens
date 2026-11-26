@@ -124,10 +124,15 @@ fun BarcodeScannerView(
             } catch (e: Exception) {
                 Log.w("NutriLensScanner", "Failed to unbind camera provider", e)
             }
-            try {
-                barcodeScanner.close()
-            } catch (e: Exception) {
-                Log.w("NutriLensScanner", "Failed to close barcode scanner", e)
+            // Close ML Kit scanner on the analysis executor after any in-flight frame finishes
+            runCatching {
+                cameraExecutor.execute {
+                    try {
+                        barcodeScanner.close()
+                    } catch (e: Exception) {
+                        Log.w("NutriLensScanner", "Failed to close barcode scanner", e)
+                    }
+                }
             }
             cameraExecutor.shutdown()
         }
@@ -161,10 +166,15 @@ fun BarcodeScannerView(
                             .build()
 
                         imageAnalysis.setAnalyzer(cameraExecutor) { imageProxy ->
+                            if (isDisposed.get()) {
+                                imageProxy.close()
+                                return@setAnalyzer
+                            }
                             processImageProxy(
                                 scanner = barcodeScanner,
                                 imageProxy = imageProxy,
                                 onBarcodeFound = { rawBarcode ->
+                                    if (isDisposed.get()) return@processImageProxy
                                     val now = System.currentTimeMillis()
                                     val prevCode = lastScannedBarcode.get()
                                     val prevTime = lastScannedTimestamp.get()
@@ -173,6 +183,7 @@ fun BarcodeScannerView(
                                         lastScannedBarcode.set(rawBarcode)
                                         lastScannedTimestamp.set(now)
                                         mainExecutor.execute {
+                                            if (isDisposed.get()) return@execute
                                             scanFlashActive = true
                                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                             latestOnBarcodeDetected(rawBarcode)
@@ -182,7 +193,11 @@ fun BarcodeScannerView(
                             )
                         }
 
-                        val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+                        val cameraSelector = when {
+                            cameraProvider.hasCamera(CameraSelector.DEFAULT_BACK_CAMERA) -> CameraSelector.DEFAULT_BACK_CAMERA
+                            cameraProvider.hasCamera(CameraSelector.DEFAULT_FRONT_CAMERA) -> CameraSelector.DEFAULT_FRONT_CAMERA
+                            else -> CameraSelector.DEFAULT_BACK_CAMERA
+                        }
 
                         cameraProvider.unbindAll()
                         camera = cameraProvider.bindToLifecycle(
@@ -214,23 +229,28 @@ private fun processImageProxy(
 ) {
     val mediaImage = imageProxy.image
     if (mediaImage != null) {
-        val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
-        scanner.process(image)
-            .addOnSuccessListener { barcodes ->
-                for (barcode in barcodes) {
-                    val raw = barcode.rawValue
-                    if (!raw.isNullOrBlank()) {
-                        onBarcodeFound(raw)
-                        break
+        try {
+            val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
+            scanner.process(image)
+                .addOnSuccessListener { barcodes ->
+                    for (barcode in barcodes) {
+                        val raw = barcode.rawValue
+                        if (!raw.isNullOrBlank()) {
+                            onBarcodeFound(raw)
+                            break
+                        }
                     }
                 }
-            }
-            .addOnFailureListener { e ->
-                Log.e("NutriLensScanner", "Barcode scanning failed", e)
-            }
-            .addOnCompleteListener {
-                imageProxy.close()
-            }
+                .addOnFailureListener { e ->
+                    Log.e("NutriLensScanner", "Barcode scanning failed", e)
+                }
+                .addOnCompleteListener {
+                    imageProxy.close()
+                }
+        } catch (e: Exception) {
+            Log.e("NutriLensScanner", "Failed to submit frame to ML Kit scanner", e)
+            imageProxy.close()
+        }
     } else {
         imageProxy.close()
     }

@@ -181,7 +181,7 @@ fun NutritionalInsightsCard(
             }
 
             // Compact Caloric Split Bar (Carbs / Fat / Protein %)
-            if (summary.hasMacroData) {
+            if (summary.hasMacroData && (summary.carbsCaloriePct + summary.fatCaloriePct + summary.proteinCaloriePct) > 0) {
                 Spacer(modifier = Modifier.height(12.dp))
                 CaloricSplitBar(
                     carbsPct = summary.carbsCaloriePct,

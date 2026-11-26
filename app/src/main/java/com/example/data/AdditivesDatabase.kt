@@ -2,6 +2,7 @@ package com.example.data
 
 import com.example.model.AdditiveDetail
 import com.example.model.AdditiveRisk
+import java.util.Locale
 
 object AdditivesDatabase {
     // Curated database of food additives (E-numbers) with health risks and descriptions
@@ -52,20 +53,22 @@ object AdditivesDatabase {
         "e500" to AdditiveDetail("E500", "Sodium Carbonates (Baking Soda)", AdditiveRisk.SAFE, "Raising Agent", "Classic kitchen leavening agent, safe.")
     )
 
+    private val BASE_E_CODE_REGEX = Regex("^e\\d+")
+
     fun resolve(tag: String): AdditiveDetail {
-        // Tag format often "en:e322" or "e322" or "en:e322i"
-        val cleanTag = tag.trim().lowercase().removePrefix("en:")
-        
+        // Tag format often "en:e322", "fr:e322", "e322", or "en:e322i"
+        val cleanTag = tag.trim().lowercase(Locale.ROOT).substringAfter(":")
+
         // Exact match
         database[cleanTag]?.let { return it }
 
-        // Strip sub-letter like e322i -> e322
-        val baseCode = cleanTag.filter { it.isDigit() || it == 'e' }
-        database[baseCode]?.let { return it.copy(code = cleanTag.uppercase()) }
+        // Strip sub-letter like e322i -> e322 or e160e -> e160
+        val baseCode = BASE_E_CODE_REGEX.find(cleanTag)?.value ?: cleanTag
+        database[baseCode]?.let { return it.copy(code = cleanTag.uppercase(Locale.ROOT)) }
 
         // Formatted code
-        val displayCode = cleanTag.uppercase()
-        val eNum = cleanTag.removePrefix("e").toIntOrNull()
+        val displayCode = cleanTag.uppercase(Locale.ROOT)
+        val eNum = baseCode.removePrefix("e").toIntOrNull()
 
         val inferredRisk = when {
             cleanTag.startsWith("e1") && (cleanTag in setOf("e102", "e104", "e110", "e122", "e124", "e129")) -> AdditiveRisk.HIGH

@@ -31,9 +31,12 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.coroutines.resume
 
 enum class BillingConnectionState {
@@ -88,9 +91,14 @@ class BillingRepository(
     private val appContext: Context = context.applicationContext
     private val productDetailsCache = ConcurrentHashMap<String, ProductDetails>()
     private val isReleased = AtomicBoolean(false)
+    private val isLaunchingFlow = AtomicBoolean(false)
+    private val connectionMutex = Mutex()
+    private val reconnectAttempt = AtomicInteger(0)
 
+    @Volatile
     private var connectionDeferred: CompletableDeferred<Boolean>? = null
-    private var reconnectAttempt = 0
+
+    @Volatile
     private var pendingTier: DonationTier? = null
 
     private val _billingState = MutableStateFlow(BillingUiState())
@@ -141,22 +149,23 @@ class BillingRepository(
      */
     suspend fun launchBillingFlow(activity: Activity, tier: DonationTier) {
         if (isReleased.get()) return
-
-        val isAtLeastStarted = (activity as? LifecycleOwner)?.lifecycle?.currentState
-            ?.isAtLeast(Lifecycle.State.STARTED) ?: true
-
-        if (!isActivitySessionValid(activity.isFinishing, activity.isDestroyed, isAtLeastStarted)) {
-            _billingEvents.emit(BillingEvent.BillingMessage(R.string.billing_activity_unavailable))
-            return
-        }
-
-        _billingState.update { it.copy(processingTier = tier) }
-        pendingTier = tier
+        if (!isLaunchingFlow.compareAndSet(false, true)) return
 
         try {
+            val isAtLeastStarted = (activity as? LifecycleOwner)?.lifecycle?.currentState
+                ?.isAtLeast(Lifecycle.State.STARTED) ?: true
+
+            if (!isActivitySessionValid(activity.isFinishing, activity.isDestroyed, isAtLeastStarted)) {
+                _billingEvents.emit(BillingEvent.BillingMessage(R.string.billing_activity_unavailable))
+                return
+            }
+
+            _billingState.update { it.copy(processingTier = tier) }
+            pendingTier = tier
+
             val connected = ensureConnected()
             if (!connected) {
-                _billingState.update { it.copy(processingTier = null) }
+                clearProcessingState()
                 _billingEvents.emit(
                     BillingEvent.BillingMessage(
                         messageRes = R.string.billing_store_sku_unavailable,
@@ -172,7 +181,7 @@ class BillingRepository(
 
             val details = productDetailsCache[tier.skuId]
             if (details == null) {
-                _billingState.update { it.copy(processingTier = null) }
+                clearProcessingState()
                 _billingEvents.emit(
                     BillingEvent.BillingMessage(
                         messageRes = R.string.billing_store_sku_unavailable,
@@ -201,7 +210,7 @@ class BillingRepository(
             }
 
             if (launchResult == null) {
-                _billingState.update { it.copy(processingTier = null) }
+                clearProcessingState()
                 _billingEvents.emit(BillingEvent.BillingMessage(R.string.billing_activity_unavailable))
                 return
             }
@@ -211,15 +220,15 @@ class BillingRepository(
                     // Purchase completion arrives asynchronously in onPurchasesUpdated
                 }
                 BillingClient.BillingResponseCode.USER_CANCELED -> {
-                    _billingState.update { it.copy(processingTier = null) }
+                    clearProcessingState()
                     _billingEvents.emit(BillingEvent.PurchaseCancelled)
                 }
                 BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED -> {
-                    _billingState.update { it.copy(processingTier = null) }
+                    clearProcessingState()
                     queryExistingPurchases(notifyUser = true)
                 }
                 else -> {
-                    _billingState.update { it.copy(processingTier = null) }
+                    clearProcessingState()
                     _billingEvents.emit(
                         BillingEvent.BillingError(
                             launchResult.debugMessage.ifBlank {
@@ -231,27 +240,36 @@ class BillingRepository(
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error launching Google Play Billing flow", e)
-            _billingState.update { it.copy(processingTier = null) }
+            clearProcessingState()
             _billingEvents.emit(
                 BillingEvent.BillingError(
                     e.localizedMessage ?: appContext.getString(R.string.billing_unknown_error)
                 )
             )
+        } finally {
+            isLaunchingFlow.set(false)
         }
+    }
+
+    private fun clearProcessingState() {
+        pendingTier = null
+        _billingState.update { it.copy(processingTier = null) }
     }
 
     fun restorePurchases() {
         if (isReleased.get()) return
         scope.launch {
             _billingState.update { it.copy(isRestoring = true) }
-            val connected = ensureConnected()
-            if (!connected) {
+            try {
+                val connected = ensureConnected()
+                if (!connected) {
+                    _billingEvents.emit(BillingEvent.RestoreResult(restored = false))
+                    return@launch
+                }
+                queryExistingPurchases(notifyUser = true)
+            } finally {
                 _billingState.update { it.copy(isRestoring = false) }
-                _billingEvents.emit(BillingEvent.RestoreResult(restored = false))
-                return@launch
             }
-            queryExistingPurchases(notifyUser = true)
-            _billingState.update { it.copy(isRestoring = false) }
         }
     }
 
@@ -264,24 +282,24 @@ class BillingRepository(
             when (billingResult.responseCode) {
                 BillingClient.BillingResponseCode.OK -> {
                     if (purchases.isNullOrEmpty()) {
-                        _billingState.update { it.copy(processingTier = null) }
+                        clearProcessingState()
                     } else {
                         purchases.forEach { purchase ->
                             handlePurchase(purchase, emitSuccessToast = true)
                         }
-                        _billingState.update { it.copy(processingTier = null) }
+                        clearProcessingState()
                     }
                 }
                 BillingClient.BillingResponseCode.USER_CANCELED -> {
-                    _billingState.update { it.copy(processingTier = null) }
+                    clearProcessingState()
                     _billingEvents.emit(BillingEvent.PurchaseCancelled)
                 }
                 BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED -> {
-                    _billingState.update { it.copy(processingTier = null) }
+                    clearProcessingState()
                     queryExistingPurchases(notifyUser = true)
                 }
                 else -> {
-                    _billingState.update { it.copy(processingTier = null) }
+                    clearProcessingState()
                     _billingEvents.emit(
                         BillingEvent.BillingError(
                             billingResult.debugMessage.ifBlank {
@@ -301,67 +319,75 @@ class BillingRepository(
             return true
         }
 
-        val existing = connectionDeferred
-        if (existing != null && existing.isActive) {
-            return existing.await()
-        }
-
-        val deferred = CompletableDeferred<Boolean>()
-        connectionDeferred = deferred
-        _billingState.update { it.copy(connectionState = BillingConnectionState.CONNECTING) }
-
-        try {
-            billingClient.startConnection(object : BillingClientStateListener {
-                override fun onBillingSetupFinished(billingResult: BillingResult) {
-                    if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-                        reconnectAttempt = 0
-                        _billingState.update {
-                            it.copy(connectionState = BillingConnectionState.CONNECTED)
-                        }
-                        deferred.complete(true)
-                        scope.launch {
-                            queryDonationProducts()
-                            queryExistingPurchases(notifyUser = false)
-                        }
-                    } else {
-                        val unavailable = billingResult.responseCode ==
-                            BillingClient.BillingResponseCode.BILLING_UNAVAILABLE ||
-                            billingResult.responseCode == BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED
-                        _billingState.update {
-                            it.copy(
-                                connectionState = if (unavailable) {
-                                    BillingConnectionState.UNAVAILABLE
-                                } else {
-                                    BillingConnectionState.DISCONNECTED
+        val deferred = connectionMutex.withLock {
+            if (isReleased.get()) return false
+            if (billingClient.isReady) {
+                _billingState.update { it.copy(connectionState = BillingConnectionState.CONNECTED) }
+                return true
+            }
+            val existing = connectionDeferred
+            if (existing != null && existing.isActive) {
+                existing
+            } else {
+                val created = CompletableDeferred<Boolean>()
+                connectionDeferred = created
+                _billingState.update { it.copy(connectionState = BillingConnectionState.CONNECTING) }
+                try {
+                    billingClient.startConnection(object : BillingClientStateListener {
+                        override fun onBillingSetupFinished(billingResult: BillingResult) {
+                            if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
+                                reconnectAttempt.set(0)
+                                _billingState.update {
+                                    it.copy(connectionState = BillingConnectionState.CONNECTED)
                                 }
-                            )
+                                created.complete(true)
+                                scope.launch {
+                                    queryDonationProducts()
+                                    queryExistingPurchases(notifyUser = false)
+                                }
+                            } else {
+                                val unavailable = billingResult.responseCode ==
+                                    BillingClient.BillingResponseCode.BILLING_UNAVAILABLE ||
+                                    billingResult.responseCode == BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED
+                                _billingState.update {
+                                    it.copy(
+                                        connectionState = if (unavailable) {
+                                            BillingConnectionState.UNAVAILABLE
+                                        } else {
+                                            BillingConnectionState.DISCONNECTED
+                                        }
+                                    )
+                                }
+                                created.complete(false)
+                            }
                         }
-                        deferred.complete(false)
-                    }
-                }
 
-                override fun onBillingServiceDisconnected() {
-                    _billingState.update {
-                        it.copy(connectionState = BillingConnectionState.DISCONNECTED)
-                    }
-                    if (!deferred.isCompleted) {
-                        deferred.complete(false)
-                    }
-                    scheduleReconnect()
+                        override fun onBillingServiceDisconnected() {
+                            _billingState.update {
+                                it.copy(connectionState = BillingConnectionState.DISCONNECTED)
+                            }
+                            if (!created.isCompleted) {
+                                created.complete(false)
+                            }
+                            scheduleReconnect()
+                        }
+                    })
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to start BillingClient connection", e)
+                    _billingState.update { it.copy(connectionState = BillingConnectionState.UNAVAILABLE) }
+                    created.complete(false)
                 }
-            })
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to start BillingClient connection", e)
-            _billingState.update { it.copy(connectionState = BillingConnectionState.UNAVAILABLE) }
-            deferred.complete(false)
+                created
+            }
         }
 
         return deferred.await()
     }
 
     private fun scheduleReconnect() {
-        if (isReleased.get() || reconnectAttempt >= MAX_RECONNECT_ATTEMPTS) return
-        val attempt = ++reconnectAttempt
+        if (isReleased.get()) return
+        val attempt = reconnectAttempt.incrementAndGet()
+        if (attempt > MAX_RECONNECT_ATTEMPTS) return
         val backoffMs = 1000L * (1 shl (attempt - 1))
         scope.launch {
             delay(backoffMs)
@@ -466,14 +492,21 @@ class BillingRepository(
                     purchase.products.contains(tier.skuId)
                 } ?: pendingTier
 
-                val consumed = consumePurchase(purchase.purchaseToken)
-                if (consumed) {
+                val consumeResult = consumePurchase(purchase.purchaseToken)
+                if (consumeResult.first) {
                     _supporterEntitlementFlow.emit(true)
                     if (emitSuccessToast) {
                         _billingEvents.emit(BillingEvent.PurchaseSucceeded(matchedTier))
                     }
                     true
                 } else {
+                    if (emitSuccessToast) {
+                        _billingEvents.emit(
+                            BillingEvent.BillingError(
+                                consumeResult.second ?: appContext.getString(R.string.billing_unknown_error)
+                            )
+                        )
+                    }
                     false
                 }
             }
@@ -487,8 +520,10 @@ class BillingRepository(
         }
     }
 
-    private suspend fun consumePurchase(purchaseToken: String): Boolean {
-        if (!billingClient.isReady || isReleased.get()) return false
+    private suspend fun consumePurchase(purchaseToken: String): Pair<Boolean, String?> {
+        if (!billingClient.isReady || isReleased.get()) {
+            return false to appContext.getString(R.string.billing_status_unavailable)
+        }
         val consumeParams = ConsumeParams.newBuilder()
             .setPurchaseToken(purchaseToken)
             .build()
@@ -496,10 +531,14 @@ class BillingRepository(
         return suspendCancellableCoroutine { cont ->
             billingClient.consumeAsync(consumeParams) { billingResult, _ ->
                 if (cont.isActive) {
-                    cont.resume(
-                        billingResult.responseCode == BillingClient.BillingResponseCode.OK ||
-                            billingResult.responseCode == BillingClient.BillingResponseCode.ITEM_NOT_OWNED
-                    )
+                    val ok = billingResult.responseCode == BillingClient.BillingResponseCode.OK ||
+                        billingResult.responseCode == BillingClient.BillingResponseCode.ITEM_NOT_OWNED
+                    val errorMsg = if (ok) null else {
+                        billingResult.debugMessage.ifBlank {
+                            appContext.getString(R.string.billing_error_code, billingResult.responseCode)
+                        }
+                    }
+                    cont.resume(ok to errorMsg)
                 }
             }
         }
@@ -508,10 +547,9 @@ class BillingRepository(
     fun release() {
         if (isReleased.compareAndSet(false, true)) {
             connectionDeferred?.cancel()
+            pendingTier = null
             try {
-                if (billingClient.isReady) {
-                    billingClient.endConnection()
-                }
+                billingClient.endConnection()
             } catch (e: Exception) {
                 Log.w(TAG, "Error ending BillingClient connection", e)
             }

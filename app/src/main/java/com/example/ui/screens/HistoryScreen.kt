@@ -118,6 +118,7 @@ fun HistoryScreen(
     modifier: Modifier = Modifier
 ) {
     var showClearConfirmDialog by remember { mutableStateOf(false) }
+    val context = LocalContext.current
     val now = remember(products) { System.currentTimeMillis() }
 
     val filteredProducts = remember(products, currentFilter, searchQuery) {
@@ -126,7 +127,10 @@ fun HistoryScreen(
                 prod.name.contains(searchQuery, ignoreCase = true) ||
                 prod.brand.contains(searchQuery, ignoreCase = true) ||
                 prod.barcode.contains(searchQuery) ||
-                prod.allergens.any { it.contains(searchQuery, ignoreCase = true) } ||
+                prod.allergens.any {
+                    it.contains(searchQuery, ignoreCase = true) ||
+                        localizedAllergenName(context, it).contains(searchQuery, ignoreCase = true)
+                } ||
                 prod.additives.any { it.code.contains(searchQuery, ignoreCase = true) || it.name.contains(searchQuery, ignoreCase = true) }
 
             val matchesFilter = when (currentFilter) {
@@ -138,6 +142,7 @@ fun HistoryScreen(
                     prod.additives.any { it.risk == AdditiveRisk.HIGH }
                 HistoryFilter.CLEAN_SAFE -> (prod.novaGroup == null || prod.novaGroup in 1..2) &&
                     prod.palmOilStatus == PalmOilStatus.FREE &&
+                    prod.allergens.isEmpty() &&
                     prod.additives.none { it.risk == AdditiveRisk.HIGH }
             }
 
@@ -684,8 +689,8 @@ private fun ProductHistoryItemCard(
     }
 }
 
-private val historyDateFormatter = ThreadLocal.withInitial {
-    SimpleDateFormat("MMM d, yyyy", Locale.getDefault())
+private fun formatHistoryDate(timestamp: Long): String {
+    return SimpleDateFormat("MMM d, yyyy", Locale.getDefault()).format(Date(timestamp))
 }
 
 @Composable
@@ -698,6 +703,6 @@ private fun formatScanTimestamp(timestamp: Long, now: Long): String {
         diff < 3600_000L -> stringResource(R.string.time_minutes_ago, (diff / 60_000L).toInt())
         diff < 86400_000L -> stringResource(R.string.time_hours_ago, (diff / 3600_000L).toInt())
         diff < 172800_000L -> stringResource(R.string.time_yesterday)
-        else -> historyDateFormatter.get()?.format(Date(timestamp)).orEmpty()
+        else -> formatHistoryDate(timestamp)
     }
 }

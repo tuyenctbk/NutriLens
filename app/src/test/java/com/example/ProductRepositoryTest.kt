@@ -418,6 +418,48 @@ class ProductRepositoryTest {
         assertNotNull(saved)
         assertEquals("Homemade Granola", saved?.name)
     }
+
+    @Test
+    fun `categoriesTags are persisted in Room cache and restored on cache hit`() = runTest(testDispatcher) {
+        val barcode = "777888999"
+        fakeApi.stubbedResponse = Response.success(
+            OpenFoodFactsResponse(
+                status = 1,
+                code = barcode,
+                product = ProductDto(
+                    code = barcode,
+                    productName = "Organic Almond Butter",
+                    brands = "PureNuts",
+                    categoriesTags = listOf("en:spreads", "en:nut-butters"),
+                    additivesTags = listOf("en:e322", "fr:e322"),
+                    allergensTags = listOf("en:nuts", "fr:nuts")
+                )
+            )
+        )
+
+        val firstFetch = repository.getProduct(barcode, forceRefresh = false)
+        assertTrue(firstFetch.isSuccess)
+        assertEquals(1, firstFetch.getOrNull()?.additives?.size)
+        assertEquals(1, firstFetch.getOrNull()?.allergens?.size)
+        assertEquals(listOf("en:spreads", "en:nut-butters"), firstFetch.getOrNull()?.categoriesTags)
+
+        // Second fetch hits Room cache and must retain categoriesTags for healthier swaps
+        fakeApi.shouldThrowNetworkError = true
+        val cachedFetch = repository.getProduct(barcode, forceRefresh = false)
+        assertTrue(cachedFetch.isSuccess)
+        assertEquals(listOf("en:spreads", "en:nut-butters"), cachedFetch.getOrNull()?.categoriesTags)
+    }
+
+    @Test
+    fun `http 503 server error returns NetworkUnavailable instead of NotFound`() = runTest(testDispatcher) {
+        fakeApi.stubbedResponse = Response.error(503, "Service Unavailable".toResponseBody("text/plain".toMediaTypeOrNull()))
+        val result = repository.getProduct("000111222", forceRefresh = false)
+        assertTrue(result.isFailure)
+        assertTrue(
+            "503 should map to NetworkUnavailable, got ${result.exceptionOrNull()}",
+            result.exceptionOrNull() is com.example.data.ProductLookupException.NetworkUnavailable
+        )
+    }
 }
 
 /**

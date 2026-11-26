@@ -107,6 +107,11 @@ fun ScannerScreen(
     onDismissBanner: () -> Unit = {},
     isSupporter: Boolean = false,
     isSplashVisible: Boolean = false,
+    cameraPromptHandled: Boolean = false,
+    notifPromptRequested: Boolean = false,
+    isCameraPermanentlyDenied: Boolean = false,
+    onCameraPermissionResult: (granted: Boolean, permanentlyDenied: Boolean) -> Unit = { _, _ -> },
+    onNotifPromptRequested: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -119,9 +124,11 @@ fun ScannerScreen(
         )
     }
 
-    var isPermanentlyDenied by remember { mutableStateOf(false) }
-    var cameraPromptHandled by remember { mutableStateOf(hasCameraPermission) }
-    var notifPromptRequested by remember { mutableStateOf(false) }
+    var localPermanentlyDenied by remember(isCameraPermanentlyDenied) { mutableStateOf(isCameraPermanentlyDenied) }
+    var localCameraPromptHandled by remember(cameraPromptHandled, hasCameraPermission) {
+        mutableStateOf(cameraPromptHandled || hasCameraPermission)
+    }
+    var localNotifPromptRequested by remember(notifPromptRequested) { mutableStateOf(notifPromptRequested) }
 
     // Re-check camera permission when returning to foreground (e.g. from system App Settings)
     DisposableEffect(lifecycleOwner) {
@@ -130,7 +137,8 @@ fun ScannerScreen(
                 val granted = ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
                 hasCameraPermission = granted
                 if (granted) {
-                    isPermanentlyDenied = false
+                    localPermanentlyDenied = false
+                    onCameraPermissionResult(true, false)
                 }
             }
         }
@@ -148,24 +156,27 @@ fun ScannerScreen(
         contract = ActivityResultContracts.RequestPermission()
     ) { granted ->
         hasCameraPermission = granted
-        cameraPromptHandled = true
-        if (!granted) {
+        localCameraPromptHandled = true
+        val permanentlyDenied = if (!granted) {
             val shouldShowRationale = activity?.let {
                 ActivityCompat.shouldShowRequestPermissionRationale(it, Manifest.permission.CAMERA)
             } ?: false
-            isPermanentlyDenied = !shouldShowRationale
+            !shouldShowRationale
         } else {
-            isPermanentlyDenied = false
+            false
         }
+        localPermanentlyDenied = permanentlyDenied
+        onCameraPermissionResult(granted, permanentlyDenied)
     }
 
     // Sequentially request CAMERA after splash finishes, then POST_NOTIFICATIONS on Android 13+
-    LaunchedEffect(isSplashVisible, cameraPromptHandled) {
+    LaunchedEffect(isSplashVisible, localCameraPromptHandled, localNotifPromptRequested) {
         if (!isSplashVisible) {
-            if (!hasCameraPermission && !cameraPromptHandled) {
+            if (!hasCameraPermission && !localCameraPromptHandled) {
                 cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
-            } else if (cameraPromptHandled && !notifPromptRequested && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                notifPromptRequested = true
+            } else if (localCameraPromptHandled && !localNotifPromptRequested && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                localNotifPromptRequested = true
+                onNotifPromptRequested()
                 val hasNotif = ContextCompat.checkSelfPermission(
                     context,
                     Manifest.permission.POST_NOTIFICATIONS
@@ -176,6 +187,8 @@ fun ScannerScreen(
             }
         }
     }
+
+    val isPermanentlyDenied = localPermanentlyDenied
 
     var showManualInputDialog by remember { mutableStateOf(false) }
     var manualBarcodeText by remember { mutableStateOf("") }

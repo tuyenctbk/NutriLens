@@ -54,7 +54,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.core.net.toUri
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.File
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -86,17 +93,29 @@ fun IngredientAnalyzerScreen(
 ) {
     BackHandler { onBack() }
 
-    var productName by remember { mutableStateOf("") }
-    var productBrand by remember { mutableStateOf("") }
-    var ingredientsText by remember { mutableStateOf("") }
-    var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
-    // Play-Policy compliant zero-permission Android Photo Picker
+    var productName by rememberSaveable { mutableStateOf("") }
+    var productBrand by rememberSaveable { mutableStateOf("") }
+    var ingredientsText by rememberSaveable { mutableStateOf("") }
+    var selectedImageUriString by rememberSaveable { mutableStateOf<String?>(null) }
+    var isSaving by remember { mutableStateOf(false) }
+
+    val selectedImageUri = remember(selectedImageUriString) {
+        selectedImageUriString?.toUri()
+    }
+
+    // Play-Policy compliant zero-permission Android Photo Picker; copy into app-private storage
+    // so temporary picker URI permissions never expire after process restart.
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
     ) { uri ->
         if (uri != null) {
-            selectedImageUri = uri
+            scope.launch {
+                val persistedUri = copyPickedImageToInternalStorage(context, uri)
+                selectedImageUriString = persistedUri ?: uri.toString()
+            }
         }
     }
 
@@ -230,7 +249,7 @@ fun IngredientAnalyzerScreen(
                                     modifier = Modifier.fillMaxSize()
                                 )
                                 IconButton(
-                                    onClick = { selectedImageUri = null },
+                                    onClick = { selectedImageUriString = null },
                                     modifier = Modifier
                                         .align(Alignment.TopEnd)
                                         .padding(6.dp)
@@ -364,7 +383,13 @@ fun IngredientAnalyzerScreen(
 
                             // Save Analyzed Product to Room History
                             Button(
-                                onClick = { onSaveProduct(currentProduct) },
+                                enabled = !isSaving,
+                                onClick = {
+                                    if (!isSaving) {
+                                        isSaving = true
+                                        onSaveProduct(currentProduct)
+                                    }
+                                },
                                 shape = RoundedCornerShape(14.dp),
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -385,5 +410,23 @@ fun IngredientAnalyzerScreen(
                 Spacer(modifier = Modifier.height(48.dp))
             }
         }
+    }
+}
+
+private suspend fun copyPickedImageToInternalStorage(
+    context: android.content.Context,
+    sourceUri: Uri
+): String? = withContext(Dispatchers.IO) {
+    try {
+        val dir = File(context.filesDir, "label_photos").apply { mkdirs() }
+        val destFile = File(dir, "label_${System.currentTimeMillis()}.jpg")
+        context.contentResolver.openInputStream(sourceUri)?.use { input ->
+            destFile.outputStream().use { output ->
+                input.copyTo(output)
+            }
+        } ?: return@withContext null
+        Uri.fromFile(destFile).toString()
+    } catch (_: Exception) {
+        null
     }
 }

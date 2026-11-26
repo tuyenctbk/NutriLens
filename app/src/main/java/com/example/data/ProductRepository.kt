@@ -166,6 +166,8 @@ class DefaultProductRepository(
             } else {
                 if (cachedEntity != null) {
                     Result.success(cachedEntity.toDomain(isOfflineCached = true))
+                } else if (!response.isSuccessful && (response.code() >= 500 || response.code() == 429)) {
+                    Result.failure(ProductLookupException.NetworkUnavailable("HTTP ${response.code()}"))
                 } else {
                     Result.failure(ProductLookupException.NotFound(cleanBarcode))
                 }
@@ -250,16 +252,25 @@ class DefaultProductRepository(
         val nutriscore = dto.nutriscoreGrade?.lowercase(Locale.ROOT)?.takeIf { it in listOf("a", "b", "c", "d", "e") }
         val ecoscore = dto.ecoscoreGrade?.lowercase(Locale.ROOT)?.takeIf { it in listOf("a", "b", "c", "d", "e") }
 
-        // Additives resolution
+        // Additives resolution (deduplicate by normalized E-code after stripping language prefixes)
         val rawAdditiveTags = (dto.additivesTags ?: emptyList()) + (dto.additivesOriginalTags ?: emptyList())
-        val additives = rawAdditiveTags.distinct().map { AdditivesDatabase.resolve(it) }
+        val additives = rawAdditiveTags
+            .filter { it.isNotBlank() }
+            .map { AdditivesDatabase.resolve(it) }
+            .distinctBy { it.code }
 
         // Allergens
         val rawAllergens = (dto.allergensTags ?: emptyList()) + (dto.allergensHierarchy ?: emptyList())
-        val allergens = rawAllergens.distinct().map { formatTag(it) }.filter { it.isNotBlank() }
+        val allergens = rawAllergens
+            .map { formatTag(it) }
+            .filter { it.isNotBlank() }
+            .distinctBy { it.lowercase(Locale.ROOT) }
 
         // Traces
-        val traces = (dto.tracesTags ?: emptyList()).distinct().map { formatTag(it) }.filter { it.isNotBlank() }
+        val traces = (dto.tracesTags ?: emptyList())
+            .map { formatTag(it) }
+            .filter { it.isNotBlank() }
+            .distinctBy { it.lowercase(Locale.ROOT) }
 
         // Palm Oil Analysis
         val analysis = dto.ingredientsAnalysisTags ?: emptyList()
@@ -325,9 +336,11 @@ class DefaultProductRepository(
     }
 
     private fun formatTag(tag: String): String {
-        return tag.removePrefix("en:")
+        return tag.trim()
+            .substringAfter(":")
             .replace("-", " ")
             .split(" ")
+            .filter { it.isNotBlank() }
             .joinToString(" ") { word ->
                 word.replaceFirstChar { char -> char.titlecase(Locale.ROOT) }
             }
@@ -338,12 +351,17 @@ class DefaultProductRepository(
             .map { it.trim() }
             .filter { it.isNotBlank() }
             .map { AdditivesDatabase.resolve(it) }
+            .distinctBy { it.code }
 
         val allergenList = allergensRaw.split(",")
             .map { it.trim() }
             .filter { it.isNotBlank() }
 
         val traceList = tracesRaw.split(",")
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+
+        val categoriesList = categoriesTagsRaw.split(",")
             .map { it.trim() }
             .filter { it.isNotBlank() }
 
@@ -377,7 +395,7 @@ class DefaultProductRepository(
             scannedAt = scannedAt,
             isFavorite = isFavorite,
             isOfflineCached = isOfflineCached,
-            categoriesTags = emptyList()
+            categoriesTags = categoriesList
         )
     }
 
@@ -408,7 +426,8 @@ class DefaultProductRepository(
             quantity = quantity,
             servingSize = servingSize,
             scannedAt = scannedAt,
-            isFavorite = isFavorite
+            isFavorite = isFavorite,
+            categoriesTagsRaw = categoriesTags.joinToString(",")
         )
     }
 }

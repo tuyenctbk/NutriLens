@@ -19,23 +19,30 @@ object HealthAnalyzer {
     private fun wordRegex(term: String): Regex =
         wordBoundaryRegexCache.getOrPut(term) { Regex("\\b${Regex.escape(term)}\\b") }
 
-    // Common standard allergen mapping
+    // Common standard allergen mapping (includes both singular & plural forms for accurate word-boundary matching)
     val KNOWN_ALLERGENS = listOf(
-        "Milk" to listOf("milk", "lait", "dairy", "whey", "casein", "lactose", "butter", "cheese", "cream", "en:milk"),
-        "Gluten" to listOf("gluten", "wheat", "blé", "barley", "orge", "rye", "seigle", "oats", "avoine", "spelt", "en:gluten"),
-        "Peanuts" to listOf("peanut", "arachide", "cacahuète", "groundnut", "en:peanuts"),
-        "Tree Nuts" to listOf("nuts", "nut", "hazelnut", "noisette", "almond", "amande", "walnut", "noix", "cashew", "pistachio", "pecan", "en:nuts"),
-        "Soybeans" to listOf("soy", "soja", "soybean", "soya", "tofu", "edamame", "en:soybeans"),
-        "Eggs" to listOf("egg", "oeuf", "albumin", "lysozyme", "en:eggs"),
-        "Fish" to listOf("fish", "poisson", "salmon", "tuna", "cod", "anchovy", "en:fish"),
-        "Crustaceans" to listOf("crustacean", "crab", "shrimp", "lobster", "prawn", "crevette", "en:crustaceans"),
+        "Milk" to listOf("milk", "lait", "dairy", "whey", "casein", "lactose", "butter", "cheese", "cream", "yogurt", "yoghurt", "en:milk"),
+        "Gluten" to listOf("gluten", "wheat", "blé", "barley", "orge", "rye", "seigle", "oats", "oat", "avoine", "spelt", "en:gluten"),
+        "Peanuts" to listOf("peanut", "peanuts", "arachide", "arachides", "cacahuète", "cacahuètes", "groundnut", "groundnuts", "en:peanuts"),
+        "Tree Nuts" to listOf("tree nuts", "tree nut", "nuts", "nut", "hazelnut", "hazelnuts", "noisette", "noisettes", "almond", "almonds", "amande", "amandes", "walnut", "walnuts", "noix", "cashew", "cashews", "pistachio", "pistachios", "pecan", "pecans", "macadamia", "brazil nut", "brazil nuts", "pine nut", "pine nuts", "en:nuts"),
+        "Soybeans" to listOf("soy", "soja", "soybean", "soybeans", "soya", "tofu", "edamame", "en:soybeans"),
+        "Eggs" to listOf("egg", "eggs", "oeuf", "oeufs", "œuf", "œufs", "albumin", "lysozyme", "en:eggs"),
+        "Fish" to listOf("fish", "poisson", "poissons", "salmon", "tuna", "cod", "anchovy", "anchovies", "sardine", "sardines", "mackerel", "en:fish"),
+        "Crustaceans" to listOf("crustacean", "crustaceans", "crab", "crabs", "shrimp", "shrimps", "lobster", "lobsters", "prawn", "prawns", "crevette", "crevettes", "en:crustaceans"),
         "Sesame" to listOf("sesame", "sésame", "tahini", "en:sesame-seeds"),
         "Mustard" to listOf("mustard", "moutarde", "en:mustard"),
-        "Celery" to listOf("celery", "céleri", "en:celery"),
-        "Lupin" to listOf("lupin", "lupine", "en:lupin"),
-        "Molluscs" to listOf("mollusc", "mollusk", "clam", "mussel", "oyster", "squid", "octopus", "en:molluscs"),
-        "Sulphites" to listOf("sulphite", "sulfite", "sulfur", "dioxyde de soufre", "e220", "e221", "e222", "e223", "e224", "en:sulphur-dioxide-and-sulphites")
+        "Celery" to listOf("celery", "céleri", "celeriac", "en:celery"),
+        "Lupin" to listOf("lupin", "lupine", "lupins", "en:lupin"),
+        "Molluscs" to listOf("mollusc", "molluscs", "mollusk", "mollusks", "clam", "clams", "mussel", "mussels", "oyster", "oysters", "squid", "octopus", "en:molluscs"),
+        "Sulphites" to listOf("sulphite", "sulphites", "sulfite", "sulfites", "sulfur dioxide", "sulphur dioxide", "dioxyde de soufre", "e220", "e221", "e222", "e223", "e224", "en:sulphur-dioxide-and-sulphites")
     )
+
+    private fun tagMatchesSynonyms(tag: String, synonyms: List<String>, allergenName: String): Boolean {
+        val sanitizedTag = sanitizeIngredientsForAllergen(tag, allergenName)
+        return synonyms.any { s ->
+            sanitizedTag == s || sanitizedTag.contains(wordRegex(s))
+        }
+    }
 
     fun evaluate(product: Product, profile: UserProfile): List<HealthWarning> {
         val warnings = mutableListOf<HealthWarning>()
@@ -53,13 +60,13 @@ object HealthAnalyzer {
                 ?: listOf(allergenName.lowercase(Locale.ROOT))
             val sanitizedIngredients = sanitizeIngredientsForAllergen(ingredientsLower, allergenName)
 
-            val inAllergens = productAllergensLower.any { tag -> synonyms.any { s -> tag.contains(s) } }
+            val inAllergens = productAllergensLower.any { tag -> tagMatchesSynonyms(tag, synonyms, allergenName) }
             val inIngredients = synonyms.any { s -> sanitizedIngredients.contains(wordRegex(s)) }
 
             if (inAllergens || inIngredients) {
                 matchedAllergens.add(allergenName)
             } else {
-                val inTraces = productTracesLower.any { tag -> synonyms.any { s -> tag.contains(s) } }
+                val inTraces = productTracesLower.any { tag -> tagMatchesSynonyms(tag, synonyms, allergenName) }
                 if (inTraces) {
                     matchedTraces.add(allergenName)
                 }
@@ -96,8 +103,8 @@ object HealthAnalyzer {
 
         // 2. Gluten-Free Preference
         if (profile.isGlutenFree) {
-            val glutenSynonyms = listOf("gluten", "wheat", "blé", "barley", "orge", "rye", "seigle", "oats", "avoine", "spelt", "en:gluten")
-            val hasGlutenTag = productAllergensLower.any { tag -> glutenSynonyms.any { s -> tag.contains(s) } }
+            val glutenSynonyms = listOf("gluten", "wheat", "blé", "barley", "orge", "rye", "seigle", "oats", "oat", "avoine", "spelt", "en:gluten")
+            val hasGlutenTag = productAllergensLower.any { tag -> tagMatchesSynonyms(tag, glutenSynonyms, "Gluten") }
             val hasGlutenText = glutenSynonyms.any { s -> ingredientsLower.contains(wordRegex(s)) }
 
             if (hasGlutenTag || hasGlutenText) {
@@ -141,7 +148,12 @@ object HealthAnalyzer {
 
         // 4. Vegan / Vegetarian Preference
         if (profile.isVegan) {
-            when (product.veganStatus) {
+            val effectiveVeganStatus = when {
+                product.veganStatus != DietStatus.UNKNOWN -> product.veganStatus
+                product.vegetarianStatus == DietStatus.NOT_SUITABLE -> DietStatus.NOT_SUITABLE
+                else -> DietStatus.UNKNOWN
+            }
+            when (effectiveVeganStatus) {
                 DietStatus.NOT_SUITABLE -> {
                     warnings.add(
                         HealthWarning(
@@ -381,8 +393,15 @@ object HealthAnalyzer {
             else -> PalmOilStatus.UNKNOWN
         }
 
-        val nonVegKeywords = listOf("beef", "pork", "chicken", "turkey", "meat", "fish", "salmon", "tuna", "shrimp", "gelatin", "gelatine", "lard", "anchovy")
-        val nonVeganKeywords = nonVegKeywords + listOf("milk", "butter", "cheese", "cream", "whey", "casein", "lactose", "egg", "honey", "yogurt")
+        val nonVegKeywords = listOf(
+            "beef", "pork", "chicken", "turkey", "meat", "fish", "salmon", "tuna",
+            "shrimp", "shrimps", "prawn", "prawns", "gelatin", "gelatine", "lard",
+            "anchovy", "anchovies", "sardine", "sardines", "rennet"
+        )
+        val nonVeganKeywords = nonVegKeywords + listOf(
+            "milk", "butter", "cheese", "cream", "whey", "casein", "lactose",
+            "egg", "eggs", "honey", "yogurt", "yoghurt"
+        )
         val dairySanitizedLower = sanitizeIngredientsForAllergen(lower, "Milk")
 
         val vegetarianStatus = when {

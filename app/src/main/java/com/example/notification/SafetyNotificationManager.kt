@@ -146,19 +146,6 @@ object SafetyNotificationManager {
             context.getString(R.string.pantry_notif_multi_body, previewNames)
         }
 
-        // Quick action button: "Mark Consumed" directly from notification shade
-        val markConsumedIntent = Intent(context, PantryActionReceiver::class.java).apply {
-            action = PantryActionReceiver.ACTION_MARK_CONSUMED
-            putExtra(PantryActionReceiver.EXTRA_BARCODE, leadItem.barcode)
-            putExtra(PantryActionReceiver.EXTRA_NOTIFICATION_ID, notificationId)
-        }
-        val markConsumedPendingIntent = PendingIntent.getBroadcast(
-            context,
-            notificationId,
-            markConsumedIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-
         val builder = NotificationCompat.Builder(context, CHANNEL_PANTRY_EXPIRY)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(title)
@@ -167,11 +154,26 @@ object SafetyNotificationManager {
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setAutoCancel(true)
             .setContentIntent(openPantryPendingIntent)
-            .addAction(
+
+        // Only attach quick "Mark Consumed" action for single-item alerts so it is unambiguous which item is updated
+        if (expiringItems.size == 1) {
+            val markConsumedIntent = Intent(context, PantryActionReceiver::class.java).apply {
+                action = PantryActionReceiver.ACTION_MARK_CONSUMED
+                putExtra(PantryActionReceiver.EXTRA_BARCODE, leadItem.barcode)
+                putExtra(PantryActionReceiver.EXTRA_NOTIFICATION_ID, notificationId)
+            }
+            val markConsumedPendingIntent = PendingIntent.getBroadcast(
+                context,
+                notificationId,
+                markConsumedIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+            builder.addAction(
                 0,
                 context.getString(R.string.pantry_notif_mark_consumed),
                 markConsumedPendingIntent
             )
+        }
 
         try {
             notificationManager.notify(notificationId, builder.build())

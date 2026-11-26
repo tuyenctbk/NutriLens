@@ -6,8 +6,8 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.ContextWrapper
 import android.content.Intent
-import android.net.Uri
 import android.widget.Toast
+import androidx.core.net.toUri
 import com.example.R
 
 /**
@@ -56,9 +56,9 @@ object DonationBillingHelper {
         clipLabel: String
     ) {
         val resolvedActivity = hostActivity ?: context.findActivity()
-        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+        val intent = Intent(Intent.ACTION_VIEW, url.toUri())
         try {
-            if (resolvedActivity != null && !resolvedActivity.isFinishing) {
+            if (resolvedActivity != null && !resolvedActivity.isFinishing && !resolvedActivity.isDestroyed) {
                 resolvedActivity.startActivity(intent)
             } else {
                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)

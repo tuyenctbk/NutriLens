@@ -1,5 +1,6 @@
 package com.example.network
 
+import com.example.BuildConfig
 import com.example.model.OpenFoodFactsResponse
 import com.example.model.OpenFoodFactsSearchResponse
 import com.squareup.moshi.Moshi
@@ -35,13 +36,13 @@ object NetworkClient {
 
     private val userAgentInterceptor = Interceptor { chain ->
         val request = chain.request().newBuilder()
-            .header("User-Agent", "NutriLens - Android Food Scanner - Version 1.2.0 (Contact: foodscan@nutrilens.app)")
+            .header("User-Agent", "NutriLens - Android Food Scanner - Version ${BuildConfig.VERSION_NAME} (Contact: foodscan@nutrilens.app)")
             .build()
         chain.proceed(request)
     }
 
     private val loggingInterceptor = HttpLoggingInterceptor().apply {
-        level = HttpLoggingInterceptor.Level.BASIC
+        level = if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BASIC else HttpLoggingInterceptor.Level.NONE
     }
 
     private val okHttpClient = OkHttpClient.Builder()
