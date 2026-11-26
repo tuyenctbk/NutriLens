@@ -117,6 +117,7 @@ class BillingRepository(
                 .enableOneTimeProducts()
                 .build()
         )
+        .enableAutoServiceReconnection()
         .build()
 
     fun startConnection() {
@@ -191,9 +192,17 @@ class BillingRepository(
                 return
             }
 
-            val productDetailsParams = BillingFlowParams.ProductDetailsParams.newBuilder()
+            val offerToken = details.oneTimePurchaseOfferDetailsList
+                ?.firstOrNull()
+                ?.offerToken
+                ?: details.oneTimePurchaseOfferDetails?.offerToken
+
+            val productDetailsParamsBuilder = BillingFlowParams.ProductDetailsParams.newBuilder()
                 .setProductDetails(details)
-                .build()
+            if (!offerToken.isNullOrBlank()) {
+                productDetailsParamsBuilder.setOfferToken(offerToken)
+            }
+            val productDetailsParams = productDetailsParamsBuilder.build()
 
             val flowParams = BillingFlowParams.newBuilder()
                 .setProductDetailsParamsList(listOf(productDetailsParams))
@@ -412,10 +421,10 @@ class BillingRepository(
             .build()
 
         val detailsList = suspendCancellableCoroutine<List<ProductDetails>> { cont ->
-            billingClient.queryProductDetailsAsync(params) { billingResult, productDetailsList ->
+            billingClient.queryProductDetailsAsync(params) { billingResult, queryProductDetailsResult ->
                 if (cont.isActive) {
                     if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-                        cont.resume(productDetailsList)
+                        cont.resume(queryProductDetailsResult.productDetailsList)
                     } else {
                         cont.resume(emptyList())
                     }
@@ -429,7 +438,11 @@ class BillingRepository(
             detailsList.forEach { details ->
                 productDetailsCache[details.productId] = details
                 ids.add(details.productId)
-                details.oneTimePurchaseOfferDetails?.formattedPrice?.let { formatted ->
+                val formattedPrice = details.oneTimePurchaseOfferDetailsList
+                    ?.firstOrNull()
+                    ?.formattedPrice
+                    ?: details.oneTimePurchaseOfferDetails?.formattedPrice
+                formattedPrice?.let { formatted ->
                     prices[details.productId] = formatted
                 }
             }
