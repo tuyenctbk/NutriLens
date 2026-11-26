@@ -12,29 +12,44 @@ import androidx.core.app.NotificationManagerCompat
 import com.example.MainActivity
 import com.example.R
 import com.example.model.HealthWarning
+import com.example.model.PantryItem
 import com.example.model.Product
 import com.example.model.WarningSeverity
+import com.example.ui.components.localizedMessage
+import com.example.ui.components.localizedTitle
 
 object SafetyNotificationManager {
 
     const val CHANNEL_ID = "channel_dietary_safety_alerts"
-    private const val CHANNEL_NAME = "Dietary & Allergen Safety Alerts"
-    private const val CHANNEL_DESC = "Notifies when scanned food products contain ingredients matching your sensitive allergen or dietary profile."
+    const val CHANNEL_PANTRY_EXPIRY = "channel_pantry_expiration_reminders"
+    const val EXTRA_OPEN_TAB = "EXTRA_OPEN_TAB"
+    const val TAB_PANTRY = "pantry"
+
+    private const val PANTRY_NOTIFICATION_BASE_ID = 42000
 
     fun createNotificationChannel(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
+            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+            val safetyChannel = NotificationChannel(
                 CHANNEL_ID,
-                CHANNEL_NAME,
+                context.getString(R.string.notif_channel_safety_name),
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                description = CHANNEL_DESC
+                description = context.getString(R.string.notif_channel_safety_desc)
                 enableLights(true)
                 enableVibration(true)
             }
+            notificationManager.createNotificationChannel(safetyChannel)
 
-            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            notificationManager.createNotificationChannel(channel)
+            val pantryChannel = NotificationChannel(
+                CHANNEL_PANTRY_EXPIRY,
+                context.getString(R.string.notif_channel_pantry_name),
+                NotificationManager.IMPORTANCE_DEFAULT
+            ).apply {
+                description = context.getString(R.string.notif_channel_pantry_desc)
+            }
+            notificationManager.createNotificationChannel(pantryChannel)
         }
     }
 
@@ -62,12 +77,12 @@ object SafetyNotificationManager {
             context,
             product.barcode.hashCode(),
             intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0)
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
         val primaryWarning = criticalWarnings.first()
-        val title = "🚨 Dietary Alert: ${product.name}"
-        val bodyText = "${primaryWarning.title}: ${primaryWarning.message}"
+        val title = context.getString(R.string.notification_dietary_alert_title, product.name)
+        val bodyText = "${primaryWarning.localizedTitle(context)}: ${primaryWarning.localizedMessage(context)}"
 
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
@@ -81,7 +96,86 @@ object SafetyNotificationManager {
 
         try {
             notificationManager.notify(product.barcode.hashCode(), builder.build())
-        } catch (e: SecurityException) {
+        } catch (_: SecurityException) {
+            // Permission not granted on Android 13+
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    fun sendPantryExpirationNotification(
+        context: Context,
+        expiringItems: List<PantryItem>
+    ) {
+        if (expiringItems.isEmpty()) return
+        createNotificationChannel(context)
+
+        val notificationManager = NotificationManagerCompat.from(context)
+        if (!notificationManager.areNotificationsEnabled()) return
+
+        val openPantryIntent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra(EXTRA_OPEN_TAB, TAB_PANTRY)
+        }
+        val openPantryPendingIntent = PendingIntent.getActivity(
+            context,
+            PANTRY_NOTIFICATION_BASE_ID,
+            openPantryIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val leadItem = expiringItems.first()
+        val notificationId = PANTRY_NOTIFICATION_BASE_ID + (leadItem.barcode.hashCode() and 0x7FFF)
+
+        val now = System.currentTimeMillis()
+        val daysLeft = ((leadItem.expirationDate - now) / (1000L * 60L * 60L * 24L)).toInt().coerceAtLeast(0)
+
+        val title = if (expiringItems.size == 1) {
+            context.getString(R.string.pantry_notif_single_title, leadItem.name)
+        } else {
+            context.getString(R.string.pantry_notif_multi_title, expiringItems.size)
+        }
+
+        val body = if (expiringItems.size == 1) {
+            if (daysLeft == 0) {
+                context.getString(R.string.pantry_notif_expires_today, leadItem.brand)
+            } else {
+                context.getString(R.string.pantry_notif_expires_in_days, leadItem.brand, daysLeft)
+            }
+        } else {
+            val previewNames = expiringItems.take(3).joinToString(", ") { it.name }
+            context.getString(R.string.pantry_notif_multi_body, previewNames)
+        }
+
+        // Quick action button: "Mark Consumed" directly from notification shade
+        val markConsumedIntent = Intent(context, PantryActionReceiver::class.java).apply {
+            action = PantryActionReceiver.ACTION_MARK_CONSUMED
+            putExtra(PantryActionReceiver.EXTRA_BARCODE, leadItem.barcode)
+            putExtra(PantryActionReceiver.EXTRA_NOTIFICATION_ID, notificationId)
+        }
+        val markConsumedPendingIntent = PendingIntent.getBroadcast(
+            context,
+            notificationId,
+            markConsumedIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val builder = NotificationCompat.Builder(context, CHANNEL_PANTRY_EXPIRY)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setContentTitle(title)
+            .setContentText(body)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setAutoCancel(true)
+            .setContentIntent(openPantryPendingIntent)
+            .addAction(
+                0,
+                context.getString(R.string.pantry_notif_mark_consumed),
+                markConsumedPendingIntent
+            )
+
+        try {
+            notificationManager.notify(notificationId, builder.build())
+        } catch (_: SecurityException) {
             // Permission not granted on Android 13+
         }
     }

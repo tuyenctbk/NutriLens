@@ -1,5 +1,6 @@
 package com.example.data
 
+import com.example.R
 import com.example.model.AdditiveDetail
 import com.example.model.AdditiveRisk
 import com.example.model.DietStatus
@@ -9,8 +10,14 @@ import com.example.model.Product
 import com.example.model.UserProfile
 import com.example.model.WarningSeverity
 import java.util.Locale
+import java.util.concurrent.ConcurrentHashMap
 
 object HealthAnalyzer {
+
+    private val wordBoundaryRegexCache = ConcurrentHashMap<String, Regex>()
+
+    private fun wordRegex(term: String): Regex =
+        wordBoundaryRegexCache.getOrPut(term) { Regex("\\b${Regex.escape(term)}\\b") }
 
     // Common standard allergen mapping
     val KNOWN_ALLERGENS = listOf(
@@ -44,9 +51,10 @@ object HealthAnalyzer {
         for (allergenName in profile.monitoredAllergens) {
             val synonyms = KNOWN_ALLERGENS.find { it.first.equals(allergenName, ignoreCase = true) }?.second
                 ?: listOf(allergenName.lowercase(Locale.ROOT))
+            val sanitizedIngredients = sanitizeIngredientsForAllergen(ingredientsLower, allergenName)
 
             val inAllergens = productAllergensLower.any { tag -> synonyms.any { s -> tag.contains(s) } }
-            val inIngredients = synonyms.any { s -> ingredientsLower.contains("\\b$s\\b".toRegex()) }
+            val inIngredients = synonyms.any { s -> sanitizedIngredients.contains(wordRegex(s)) }
 
             if (inAllergens || inIngredients) {
                 matchedAllergens.add(allergenName)
@@ -64,7 +72,10 @@ object HealthAnalyzer {
                     title = "Allergen Alert Detected",
                     message = "Contains ${matchedAllergens.joinToString(", ")} which matches your sensitive allergen profile.",
                     severity = WarningSeverity.DANGER,
-                    iconType = "allergen"
+                    iconType = "allergen",
+                    titleRes = R.string.warning_allergen_title,
+                    messageRes = R.string.warning_allergen_msg,
+                    allergenArgs = matchedAllergens.toList()
                 )
             )
         }
@@ -75,7 +86,10 @@ object HealthAnalyzer {
                     title = "Possible Allergen Traces",
                     message = "May contain cross-contamination traces of: ${matchedTraces.joinToString(", ")}.",
                     severity = WarningSeverity.CAUTION,
-                    iconType = "allergen"
+                    iconType = "allergen",
+                    titleRes = R.string.warning_traces_title,
+                    messageRes = R.string.warning_traces_msg,
+                    allergenArgs = matchedTraces.toList()
                 )
             )
         }
@@ -84,7 +98,7 @@ object HealthAnalyzer {
         if (profile.isGlutenFree) {
             val glutenSynonyms = listOf("gluten", "wheat", "blé", "barley", "orge", "rye", "seigle", "oats", "avoine", "spelt", "en:gluten")
             val hasGlutenTag = productAllergensLower.any { tag -> glutenSynonyms.any { s -> tag.contains(s) } }
-            val hasGlutenText = glutenSynonyms.any { s -> ingredientsLower.contains("\\b$s\\b".toRegex()) }
+            val hasGlutenText = glutenSynonyms.any { s -> ingredientsLower.contains(wordRegex(s)) }
 
             if (hasGlutenTag || hasGlutenText) {
                 warnings.add(
@@ -92,7 +106,9 @@ object HealthAnalyzer {
                         title = "Gluten Detected (Not Gluten-Free)",
                         message = "Contains wheat, gluten, barley, or rye ingredients, violating your Strict Gluten-Free profile.",
                         severity = WarningSeverity.DANGER,
-                        iconType = "allergen"
+                        iconType = "allergen",
+                        titleRes = R.string.warning_gluten_title,
+                        messageRes = R.string.warning_gluten_msg
                     )
                 )
             }
@@ -108,12 +124,16 @@ object HealthAnalyzer {
             }
 
             if (matchedKeywords.isNotEmpty()) {
+                val joinedKeywords = matchedKeywords.joinToString(", ")
                 warnings.add(
                     HealthWarning(
                         title = "Custom Avoid Keyword Flagged",
-                        message = "Found ingredient match for your custom avoid list: ${matchedKeywords.joinToString(", ")}.",
+                        message = "Found ingredient match for your custom avoid list: $joinedKeywords.",
                         severity = WarningSeverity.CAUTION,
-                        iconType = "additive"
+                        iconType = "additive",
+                        titleRes = R.string.warning_custom_keyword_title,
+                        messageRes = R.string.warning_custom_keyword_msg,
+                        messageArgs = listOf(joinedKeywords)
                     )
                 )
             }
@@ -128,7 +148,9 @@ object HealthAnalyzer {
                             title = "Not Vegan Suitable",
                             message = "This product contains animal-derived ingredients or dairy/egg components.",
                             severity = WarningSeverity.DANGER,
-                            iconType = "vegan"
+                            iconType = "vegan",
+                            titleRes = R.string.warning_not_vegan_title,
+                            messageRes = R.string.warning_not_vegan_msg
                         )
                     )
                 }
@@ -138,7 +160,9 @@ object HealthAnalyzer {
                             title = "May Not Be Vegan",
                             message = "Some ingredients or additives might be sourced from animal origins.",
                             severity = WarningSeverity.CAUTION,
-                            iconType = "vegan"
+                            iconType = "vegan",
+                            titleRes = R.string.warning_maybe_vegan_title,
+                            messageRes = R.string.warning_maybe_vegan_msg
                         )
                     )
                 }
@@ -152,7 +176,9 @@ object HealthAnalyzer {
                             title = "Not Vegetarian",
                             message = "Contains meat, poultry, fish, gelatin, or animal rennet ingredients.",
                             severity = WarningSeverity.DANGER,
-                            iconType = "vegetarian"
+                            iconType = "vegetarian",
+                            titleRes = R.string.warning_not_vegetarian_title,
+                            messageRes = R.string.warning_not_vegetarian_msg
                         )
                     )
                 }
@@ -162,7 +188,9 @@ object HealthAnalyzer {
                             title = "Check Vegetarian Status",
                             message = "Contains ingredients that may be animal-derived.",
                             severity = WarningSeverity.CAUTION,
-                            iconType = "vegetarian"
+                            iconType = "vegetarian",
+                            titleRes = R.string.warning_maybe_vegetarian_title,
+                            messageRes = R.string.warning_maybe_vegetarian_msg
                         )
                     )
                 }
@@ -177,7 +205,9 @@ object HealthAnalyzer {
                     title = "Ultra-Processed (NOVA 4)",
                     message = "Industrial formulation with modified starches, flavorings, or industrial additives. Correlated with higher cardiovascular & metabolic risks.",
                     severity = WarningSeverity.CAUTION,
-                    iconType = "nova"
+                    iconType = "nova",
+                    titleRes = R.string.warning_nova4_title,
+                    messageRes = R.string.warning_nova4_msg
                 )
             )
         }
@@ -191,7 +221,9 @@ object HealthAnalyzer {
                             title = "Contains Palm Oil",
                             message = "Contains palm oil or palmolein fractions (high in palmitic saturated fat).",
                             severity = WarningSeverity.CAUTION,
-                            iconType = "palmoil"
+                            iconType = "palmoil",
+                            titleRes = R.string.warning_palm_oil_title,
+                            messageRes = R.string.warning_palm_oil_msg
                         )
                     )
                 }
@@ -201,7 +233,9 @@ object HealthAnalyzer {
                             title = "May Contain Palm Oil",
                             message = "Vegetable oil source is unspecified or may derive from palm plantations.",
                             severity = WarningSeverity.CAUTION,
-                            iconType = "palmoil"
+                            iconType = "palmoil",
+                            titleRes = R.string.warning_may_contain_palm_oil_title,
+                            messageRes = R.string.warning_may_contain_palm_oil_msg
                         )
                     )
                 }
@@ -219,7 +253,10 @@ object HealthAnalyzer {
                         title = "High-Risk Additives Found",
                         message = "Contains flagged additive(s): $names. Consider choosing a cleaner alternative.",
                         severity = WarningSeverity.CAUTION,
-                        iconType = "additive"
+                        iconType = "additive",
+                        titleRes = R.string.warning_additives_title,
+                        messageRes = R.string.warning_additives_msg,
+                        messageArgs = listOf(names)
                     )
                 )
             }
@@ -233,7 +270,10 @@ object HealthAnalyzer {
                         title = "High Sugar Content",
                         message = "Contains ${"%.1f".format(sugars)}g of sugars per 100g (over 22.5% sugar by weight).",
                         severity = WarningSeverity.CAUTION,
-                        iconType = "nutrition"
+                        iconType = "nutrition",
+                        titleRes = R.string.warning_high_sugar_title,
+                        messageRes = R.string.warning_high_sugar_msg,
+                        messageArgs = listOf(sugars)
                     )
                 )
             }
@@ -246,12 +286,240 @@ object HealthAnalyzer {
                         title = "High Salt Content",
                         message = "Contains ${"%.1f".format(salt)}g of salt per 100g (over 60% of recommended daily sodium intake).",
                         severity = WarningSeverity.CAUTION,
-                        iconType = "nutrition"
+                        iconType = "nutrition",
+                        titleRes = R.string.warning_high_salt_title,
+                        messageRes = R.string.warning_high_salt_msg,
+                        messageArgs = listOf(salt)
                     )
                 )
             }
         }
 
         return warnings
+    }
+
+    private val E_CODE_REGEX = Regex("\\b[eE]\\s?([1-9][0-9]{2}[a-i]?)\\b")
+
+    private val NAMED_ADDITIVE_PATTERNS = listOf(
+        "aspartame" to "e951",
+        "acesulfame" to "e950",
+        "sucralose" to "e955",
+        "saccharin" to "e954",
+        "cyclamate" to "e952",
+        "monosodium glutamate" to "e621",
+        "sodium benzoate" to "e211",
+        "sodium nitrite" to "e250",
+        "potassium nitrite" to "e249",
+        "sodium nitrate" to "e251",
+        "sulphur dioxide" to "e220",
+        "sulfur dioxide" to "e220",
+        "tartrazine" to "e102",
+        "allura red" to "e129",
+        "sunset yellow" to "e110",
+        "brilliant blue" to "e133",
+        "carrageenan" to "e407",
+        "lecithin" to "e322",
+        "citric acid" to "e330",
+        "xanthan gum" to "e415",
+        "guar gum" to "e412",
+        "pectin" to "e440",
+        "ascorbic acid" to "e300",
+        "caramel color" to "e150d",
+        "ammonia caramel" to "e150d"
+    )
+
+    /**
+     * Parses raw ingredient label text (from OCR or manual paste) to detect E-numbers and common named additives.
+     */
+    fun extractAdditivesFromText(ingredientsText: String): List<AdditiveDetail> {
+        if (ingredientsText.isBlank()) return emptyList()
+        val foundCodes = linkedSetOf<String>()
+
+        E_CODE_REGEX.findAll(ingredientsText).forEach { match ->
+            val normalized = "e" + match.groupValues[1].lowercase(Locale.ROOT)
+            foundCodes.add(normalized)
+        }
+
+        val lower = ingredientsText.lowercase(Locale.ROOT)
+        NAMED_ADDITIVE_PATTERNS.forEach { (keyword, eCode) ->
+            if (lower.contains(keyword)) {
+                foundCodes.add(eCode)
+            }
+        }
+
+        return foundCodes.map { AdditivesDatabase.resolve(it) }
+    }
+
+    /**
+     * Builds a complete domain Product from raw ingredient label text so the full HealthAnalyzer
+     * safety engine can evaluate items missing from Open Food Facts.
+     */
+    fun buildSyntheticProductFromIngredients(
+        name: String,
+        brand: String,
+        ingredientsText: String,
+        barcode: String? = null,
+        imageUri: String? = null,
+        defaultName: String = "Custom Label Scan",
+        defaultBrand: String = "Ingredient Label Analyzer"
+    ): Product {
+        val cleanText = ingredientsText.trim()
+        val lower = cleanText.lowercase(Locale.ROOT)
+
+        val detectedAllergens = KNOWN_ALLERGENS.mapNotNull { (allergenName, synonyms) ->
+            val sanitized = sanitizeIngredientsForAllergen(lower, allergenName)
+            val matched = synonyms.any { s -> sanitized.contains(wordRegex(s)) }
+            if (matched) allergenName else null
+        }
+
+        val additives = extractAdditivesFromText(cleanText)
+
+        val palmOilStatus = when {
+            lower.contains("palm oil") || lower.contains("palmolein") || lower.contains("palm kernel") || lower.contains("palm fat") -> PalmOilStatus.CONTAINS
+            lower.contains("vegetable oil") || lower.contains("vegetable fat") -> PalmOilStatus.MAY_CONTAIN
+            cleanText.isNotBlank() -> PalmOilStatus.FREE
+            else -> PalmOilStatus.UNKNOWN
+        }
+
+        val nonVegKeywords = listOf("beef", "pork", "chicken", "turkey", "meat", "fish", "salmon", "tuna", "shrimp", "gelatin", "gelatine", "lard", "anchovy")
+        val nonVeganKeywords = nonVegKeywords + listOf("milk", "butter", "cheese", "cream", "whey", "casein", "lactose", "egg", "honey", "yogurt")
+        val dairySanitizedLower = sanitizeIngredientsForAllergen(lower, "Milk")
+
+        val vegetarianStatus = when {
+            nonVegKeywords.any { lower.contains(wordRegex(it)) } -> DietStatus.NOT_SUITABLE
+            cleanText.isNotBlank() -> DietStatus.SUITABLE
+            else -> DietStatus.UNKNOWN
+        }
+
+        val veganStatus = when {
+            nonVeganKeywords.any { dairySanitizedLower.contains(wordRegex(it)) } -> DietStatus.NOT_SUITABLE
+            cleanText.isNotBlank() -> DietStatus.SUITABLE
+            else -> DietStatus.UNKNOWN
+        }
+
+        val estimatedNova = when {
+            additives.any { it.risk == AdditiveRisk.HIGH } || additives.size >= 3 ||
+                lower.contains("high fructose") || lower.contains("glucose-fructose") ||
+                lower.contains("artificial flavor") || lower.contains("artificial flavour") ||
+                lower.contains("modified starch") -> 4
+            additives.isNotEmpty() || lower.contains("sugar") -> 3
+            cleanText.isNotBlank() -> 1
+            else -> null
+        }
+
+        val finalBarcode = barcode?.takeIf { it.isNotBlank() } ?: "LABEL-${System.currentTimeMillis()}"
+
+        return Product(
+            barcode = finalBarcode,
+            name = name.trim().ifBlank { defaultName },
+            brand = brand.trim().ifBlank { defaultBrand },
+            imageUrl = imageUri,
+            nutriscoreGrade = null,
+            novaGroup = estimatedNova,
+            ecoscoreGrade = null,
+            ingredientsText = cleanText,
+            additives = additives,
+            allergens = detectedAllergens,
+            traces = emptyList(),
+            palmOilStatus = palmOilStatus,
+            veganStatus = veganStatus,
+            vegetarianStatus = vegetarianStatus,
+            nutriments = com.example.model.NutrimentsInfo(),
+            quantity = null,
+            servingSize = null,
+            isOfflineCached = true
+        )
+    }
+
+    /**
+     * Filters and ranks healthier swap candidates tailored to the active household dietary profile.
+     * Excludes the target product itself and any candidate that triggers DANGER warnings.
+     */
+    fun rankHealthierAlternatives(
+        target: Product,
+        candidates: List<Product>,
+        profile: UserProfile,
+        limit: Int = 5
+    ): List<Product> {
+        val targetWarnings = evaluate(target, profile)
+        val targetDangerCount = targetWarnings.count { it.severity == WarningSeverity.DANGER }
+        val targetTotalWarnings = targetWarnings.size
+        val targetScore = qualityScore(target)
+        val targetCategories = target.categoriesTags.map { it.lowercase(Locale.ROOT) }.toSet()
+
+        return candidates
+            .distinctBy { it.barcode }
+            .filter { candidate -> candidate.barcode != target.barcode }
+            .mapNotNull { candidate ->
+                val warnings = evaluate(candidate, profile)
+                val dangerCount = warnings.count { it.severity == WarningSeverity.DANGER }
+                if (dangerCount > 0) return@mapNotNull null
+
+                val candidateScore = qualityScore(candidate)
+                val isStrictlyBetter = candidateScore > targetScore ||
+                    warnings.size < targetTotalWarnings ||
+                    targetDangerCount > 0
+
+                if (!isStrictlyBetter) return@mapNotNull null
+
+                val candidateCats = candidate.categoriesTags.map { it.lowercase(Locale.ROOT) }.toSet()
+                val categoryOverlap = if (targetCategories.isNotEmpty()) {
+                    targetCategories.intersect(candidateCats).size
+                } else {
+                    0
+                }
+
+                // Weighted rank: category relevance first, then nutritional quality & clean warnings
+                val rankPoints = (categoryOverlap * 45) +
+                    (candidateScore * 8) -
+                    (warnings.size * 12) +
+                    (if (candidate.palmOilStatus == PalmOilStatus.FREE) 6 else 0)
+
+                candidate to rankPoints
+            }
+            .sortedByDescending { it.second }
+            .take(limit)
+            .map { it.first }
+    }
+
+    private fun qualityScore(product: Product): Int {
+        val nutriPoints = when (product.nutriscoreGrade?.lowercase(Locale.ROOT)) {
+            "a" -> 5
+            "b" -> 4
+            "c" -> 3
+            "d" -> 2
+            "e" -> 1
+            else -> 2
+        }
+        val novaPoints = when (product.novaGroup) {
+            1 -> 4
+            2 -> 3
+            3 -> 2
+            4 -> 0
+            else -> 1
+        }
+        val additivePenalty = product.additives.count { it.risk == AdditiveRisk.HIGH } * 2
+        return nutriPoints + novaPoints - additivePenalty
+    }
+
+    private val NON_DAIRY_PHRASES = listOf(
+        "cocoa butter", "cacao butter", "shea butter", "peanut butter",
+        "almond butter", "cashew butter", "hazelnut butter", "sunflower butter",
+        "coconut butter", "nut butter", "apple butter", "cream of tartar",
+        "coconut milk", "almond milk", "oat milk", "soy milk", "soya milk",
+        "rice milk", "hemp milk", "cashew milk", "coconut cream"
+    )
+
+    private fun sanitizeIngredientsForAllergen(ingredientsLower: String, allergenName: String): String {
+        if (!allergenName.equals("Milk", ignoreCase = true) || ingredientsLower.isBlank()) {
+            return ingredientsLower
+        }
+        var sanitized = ingredientsLower
+        for (phrase in NON_DAIRY_PHRASES) {
+            if (sanitized.contains(phrase)) {
+                sanitized = sanitized.replace(phrase, " ")
+            }
+        }
+        return sanitized
     }
 }

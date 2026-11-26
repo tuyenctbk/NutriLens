@@ -11,6 +11,9 @@ interface PantryDao {
     @Query("SELECT * FROM pantry_items ORDER BY expirationDate ASC")
     fun getAllPantryItems(): Flow<List<PantryItemEntity>>
 
+    @Query("SELECT * FROM pantry_items WHERE isConsumed = 0 ORDER BY expirationDate ASC")
+    suspend fun getUnconsumedSync(): List<PantryItemEntity>
+
     @Query("SELECT * FROM pantry_items WHERE barcode = :barcode LIMIT 1")
     suspend fun getByBarcodeSync(barcode: String): PantryItemEntity?
 

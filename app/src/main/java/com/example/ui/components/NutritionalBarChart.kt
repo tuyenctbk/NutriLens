@@ -27,7 +27,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -38,6 +37,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
@@ -48,6 +48,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.R
 import com.example.model.NutrimentsInfo
+import kotlinx.coroutines.delay
 
 @Composable
 fun NutritionalBarChart(
@@ -55,8 +56,8 @@ fun NutritionalBarChart(
     modifier: Modifier = Modifier
 ) {
     Card(
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
         modifier = modifier
             .fillMaxWidth()
             .testTag("nutritional_bar_chart")
@@ -66,7 +67,7 @@ fun NutritionalBarChart(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
                     modifier = Modifier
-                        .size(36.dp)
+                        .size(38.dp)
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.primaryContainer),
                     contentAlignment = Alignment.Center
@@ -78,7 +79,7 @@ fun NutritionalBarChart(
                         modifier = Modifier.size(20.dp)
                     )
                 }
-                Spacer(modifier = Modifier.width(10.dp))
+                Spacer(modifier = Modifier.width(12.dp))
                 Column {
                     Text(
                         text = stringResource(R.string.nutrition_chart_title),
@@ -101,10 +102,13 @@ fun NutritionalBarChart(
             val caloriesVal = nutriments.energyKcal ?: 0.0
             BarChartItem(
                 label = stringResource(R.string.nutri_calories),
-                displayValue = if (nutriments.energyKcal != null) "${caloriesVal.toInt()} kcal" else "--",
-                fraction = (caloriesVal / 800.0).coerceIn(0.0, 1.0).toFloat(),
+                displayValue = if (nutriments.energyKcal != null) stringResource(R.string.value_kcal_format, caloriesVal.toInt()) else "--",
+                fraction = if (nutriments.energyKcal != null && caloriesVal > 0.0) {
+                    (caloriesVal / 800.0).coerceIn(0.02, 1.0).toFloat()
+                } else 0f,
                 barColor = Color(0xFFF57C00),
-                icon = Icons.Default.LocalFireDepartment
+                icon = Icons.Default.LocalFireDepartment,
+                staggerDelayMs = 40L
             )
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -113,10 +117,13 @@ fun NutritionalBarChart(
             val fatVal = nutriments.fat ?: 0.0
             BarChartItem(
                 label = stringResource(R.string.nutri_fat),
-                displayValue = if (nutriments.fat != null) "${"%.1f".format(fatVal)} g" else "--",
-                fraction = (fatVal / 50.0).coerceIn(0.0, 1.0).toFloat(),
+                displayValue = if (nutriments.fat != null) stringResource(R.string.value_grams_format, fatVal) else "--",
+                fraction = if (nutriments.fat != null && fatVal > 0.0) {
+                    (fatVal / 50.0).coerceIn(0.02, 1.0).toFloat()
+                } else 0f,
                 barColor = Color(0xFFE65100),
-                icon = Icons.Default.Opacity
+                icon = Icons.Default.Opacity,
+                staggerDelayMs = 110L
             )
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -125,10 +132,13 @@ fun NutritionalBarChart(
             val carbsVal = nutriments.carbs ?: 0.0
             BarChartItem(
                 label = stringResource(R.string.nutri_carbs),
-                displayValue = if (nutriments.carbs != null) "${"%.1f".format(carbsVal)} g" else "--",
-                fraction = (carbsVal / 100.0).coerceIn(0.0, 1.0).toFloat(),
+                displayValue = if (nutriments.carbs != null) stringResource(R.string.value_grams_format, carbsVal) else "--",
+                fraction = if (nutriments.carbs != null && carbsVal > 0.0) {
+                    (carbsVal / 100.0).coerceIn(0.02, 1.0).toFloat()
+                } else 0f,
                 barColor = Color(0xFF0288D1),
-                icon = Icons.Default.Grain
+                icon = Icons.Default.Grain,
+                staggerDelayMs = 180L
             )
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -137,10 +147,13 @@ fun NutritionalBarChart(
             val proteinVal = nutriments.proteins ?: 0.0
             BarChartItem(
                 label = stringResource(R.string.nutri_protein),
-                displayValue = if (nutriments.proteins != null) "${"%.1f".format(proteinVal)} g" else "--",
-                fraction = (proteinVal / 40.0).coerceIn(0.0, 1.0).toFloat(),
+                displayValue = if (nutriments.proteins != null) stringResource(R.string.value_grams_format, proteinVal) else "--",
+                fraction = if (nutriments.proteins != null && proteinVal > 0.0) {
+                    (proteinVal / 40.0).coerceIn(0.02, 1.0).toFloat()
+                } else 0f,
                 barColor = Color(0xFF2E7D32),
-                icon = Icons.Default.FitnessCenter
+                icon = Icons.Default.FitnessCenter,
+                staggerDelayMs = 250L
             )
         }
     }
@@ -152,17 +165,21 @@ private fun BarChartItem(
     displayValue: String,
     fraction: Float,
     barColor: Color,
-    icon: ImageVector
+    icon: ImageVector,
+    staggerDelayMs: Long = 0L
 ) {
     var animationTriggered by remember { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(fraction) {
+        if (!animationTriggered && staggerDelayMs > 0L) {
+            delay(staggerDelayMs)
+        }
         animationTriggered = true
     }
 
     val animatedFraction by animateFloatAsState(
         targetValue = if (animationTriggered) fraction else 0f,
-        animationSpec = tween(durationMillis = 800, easing = FastOutSlowInEasing),
+        animationSpec = tween(durationMillis = 750, easing = FastOutSlowInEasing),
         label = "BarChartAnimation"
     )
 
@@ -204,21 +221,27 @@ private fun BarChartItem(
 
         Spacer(modifier = Modifier.height(6.dp))
 
-        // Progress Track & Bar
+        // Progress Track & Gradient Bar (clean empty track when value is 0)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(12.dp)
                 .clip(RoundedCornerShape(6.dp))
-                .background(barColor.copy(alpha = 0.15f))
+                .background(barColor.copy(alpha = 0.14f))
         ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .fillMaxWidth(animatedFraction.coerceAtLeast(0.02f))
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(barColor)
-            )
+            if (animatedFraction > 0.001f) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .fillMaxWidth(animatedFraction)
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(
+                            Brush.horizontalGradient(
+                                colors = listOf(barColor.copy(alpha = 0.78f), barColor)
+                            )
+                        )
+                )
+            }
         }
     }
 }

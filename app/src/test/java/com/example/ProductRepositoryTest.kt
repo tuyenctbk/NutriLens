@@ -306,6 +306,118 @@ class ProductRepositoryTest {
         assertTrue(result.isFailure)
         assertTrue(result.exceptionOrNull() is IllegalArgumentException)
     }
+
+    @Test
+    fun `getHealthierAlternatives filters unsafe items and prefers cleaner category swaps`() = runTest(testDispatcher) {
+        val targetSpread = com.example.model.Product(
+            barcode = "3017620422003",
+            name = "Sweet Hazelnut Spread",
+            brand = "SpreadCo",
+            imageUrl = null,
+            nutriscoreGrade = "e",
+            novaGroup = 4,
+            ecoscoreGrade = "d",
+            ingredientsText = "Sugar, palm oil, hazelnuts, skimmed milk powder, cocoa",
+            additives = emptyList(),
+            allergens = listOf("Milk", "Tree Nuts"),
+            traces = emptyList(),
+            palmOilStatus = com.example.model.PalmOilStatus.CONTAINS,
+            veganStatus = com.example.model.DietStatus.NOT_SUITABLE,
+            vegetarianStatus = com.example.model.DietStatus.SUITABLE,
+            nutriments = com.example.model.NutrimentsInfo(),
+            quantity = "400g",
+            servingSize = "15g",
+            categoriesTags = listOf("en:spreads")
+        )
+        val profile = com.example.model.UserProfile(
+            monitoredAllergens = setOf("Milk"),
+            avoidPalmOil = true,
+            avoidNova4UltraProcessed = true
+        )
+
+        // Seed Room cache with both a clean swap and an unsafe milk-containing product
+        fakeDao.insertOrReplace(
+            ScannedProductEntity(
+                barcode = "8001505005707",
+                name = "Organic Dark Hazelnut Spread",
+                brand = "CleanBrand",
+                imageUrl = null,
+                nutriscoreGrade = "b",
+                novaGroup = 2,
+                ecoscoreGrade = "b",
+                ingredientsText = "Organic hazelnuts, cocoa, cane sugar, sunflower oil",
+                additivesRaw = "",
+                allergensRaw = "Tree Nuts",
+                tracesRaw = "",
+                palmOilStatus = "FREE",
+                veganStatus = "SUITABLE",
+                vegetarianStatus = "SUITABLE",
+                energyKcal = 480.0,
+                fat = 26.0,
+                saturatedFat = 3.1,
+                carbs = 48.0,
+                sugars = 30.0,
+                fiber = 7.0,
+                proteins = 8.0,
+                salt = 0.05,
+                quantity = "250g",
+                servingSize = "15g"
+            )
+        )
+        fakeDao.insertOrReplace(
+            ScannedProductEntity(
+                barcode = "9999999999991",
+                name = "Milk Chocolate Spread",
+                brand = "DairyBrand",
+                imageUrl = null,
+                nutriscoreGrade = "a",
+                novaGroup = 1,
+                ecoscoreGrade = "a",
+                ingredientsText = "Whole milk powder, cocoa",
+                additivesRaw = "",
+                allergensRaw = "Milk",
+                tracesRaw = "",
+                palmOilStatus = "FREE",
+                veganStatus = "NOT_SUITABLE",
+                vegetarianStatus = "SUITABLE",
+                energyKcal = 300.0,
+                fat = 10.0,
+                saturatedFat = 2.0,
+                carbs = 40.0,
+                sugars = 12.0,
+                fiber = 3.0,
+                proteins = 10.0,
+                salt = 0.1,
+                quantity = "250g",
+                servingSize = "15g"
+            )
+        )
+
+        fakeApi.shouldThrowNetworkError = true // Verify offline Room fallback works cleanly
+
+        val alternatives = repository.getHealthierAlternatives(targetSpread, profile)
+        assertTrue("Should suggest at least one cleaner alternative from cache", alternatives.isNotEmpty())
+        assertEquals("8001505005707", alternatives.first().barcode)
+        // Ensure none of the suggested alternatives trigger DANGER warnings for Milk
+        alternatives.forEach { alt ->
+            val warnings = com.example.data.HealthAnalyzer.evaluate(alt, profile)
+            assertTrue(warnings.none { it.severity == com.example.model.WarningSeverity.DANGER })
+        }
+    }
+
+    @Test
+    fun `saveCustomProduct persists analyzed label into Room history`() = runTest(testDispatcher) {
+        val customProduct = com.example.data.HealthAnalyzer.buildSyntheticProductFromIngredients(
+            name = "Homemade Granola",
+            brand = "Kitchen",
+            ingredientsText = "Oats, almonds, honey, sunflower oil",
+            barcode = "LABEL-TEST-1"
+        )
+        repository.saveCustomProduct(customProduct)
+        val saved = fakeDao.getByBarcodeSync("LABEL-TEST-1")
+        assertNotNull(saved)
+        assertEquals("Homemade Granola", saved?.name)
+    }
 }
 
 /**
@@ -367,6 +479,7 @@ class FakeOpenFoodFactsApiService : OpenFoodFactsApiService {
     var callCount = 0
     var shouldThrowNetworkError = false
     var stubbedResponse: Response<OpenFoodFactsResponse>? = null
+    var stubbedSearchResponse: Response<com.example.model.OpenFoodFactsSearchResponse>? = null
 
     override suspend fun getProductByBarcode(barcode: String): Response<OpenFoodFactsResponse> {
         callCount++
@@ -374,5 +487,17 @@ class FakeOpenFoodFactsApiService : OpenFoodFactsApiService {
             throw java.io.IOException("Fake network connection failed")
         }
         return stubbedResponse ?: Response.error(404, "Not Found".toResponseBody("text/plain".toMediaTypeOrNull()))
+    }
+
+    override suspend fun searchProductsByCategory(
+        categoryTag: String,
+        nutritionGrades: String,
+        pageSize: Int,
+        sortBy: String
+    ): Response<com.example.model.OpenFoodFactsSearchResponse> {
+        if (shouldThrowNetworkError) {
+            throw java.io.IOException("Fake network connection failed")
+        }
+        return stubbedSearchResponse ?: Response.success(com.example.model.OpenFoodFactsSearchResponse(0, emptyList()))
     }
 }

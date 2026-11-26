@@ -15,6 +15,12 @@ data class OpenFoodFactsResponse(
 )
 
 @JsonClass(generateAdapter = true)
+data class OpenFoodFactsSearchResponse(
+    @param:Json(name = "count") val count: Int? = 0,
+    @param:Json(name = "products") val products: List<ProductDto>? = null
+)
+
+@JsonClass(generateAdapter = true)
 data class ProductDto(
     @param:Json(name = "code") val code: String? = null,
     @param:Json(name = "product_name") val productName: String? = null,
@@ -34,6 +40,7 @@ data class ProductDto(
     @param:Json(name = "allergens_hierarchy") val allergensHierarchy: List<String>? = null,
     @param:Json(name = "traces_tags") val tracesTags: List<String>? = null,
     @param:Json(name = "ingredients_analysis_tags") val ingredientsAnalysisTags: List<String>? = null,
+    @param:Json(name = "categories_tags") val categoriesTags: List<String>? = null,
     @param:Json(name = "quantity") val quantity: String? = null,
     @param:Json(name = "serving_size") val servingSize: String? = null,
     @param:Json(name = "nutriments") val nutriments: NutrimentsDto? = null
@@ -76,7 +83,8 @@ data class Product(
     val servingSize: String?,
     val scannedAt: Long = System.currentTimeMillis(),
     val isFavorite: Boolean = false,
-    val isOfflineCached: Boolean = false
+    val isOfflineCached: Boolean = false,
+    val categoriesTags: List<String> = emptyList()
 )
 
 enum class PalmOilStatus {
@@ -128,8 +136,64 @@ data class HealthWarning(
     val title: String,
     val message: String,
     val severity: WarningSeverity,
-    val iconType: String // "allergen", "nova", "palmoil", "additive", "nutrition"
+    val iconType: String, // "allergen", "nova", "palmoil", "additive", "nutrition"
+    val titleRes: Int? = null,
+    val messageRes: Int? = null,
+    val messageArgs: List<Any> = emptyList(),
+    val allergenArgs: List<String> = emptyList()
 )
+
+@JsonClass(generateAdapter = true)
+data class HouseholdProfile(
+    val id: String,
+    val name: String,
+    val monitoredAllergens: List<String> = listOf("Milk", "Gluten", "Peanuts"),
+    val isVegan: Boolean = false,
+    val isVegetarian: Boolean = false,
+    val isGlutenFree: Boolean = false,
+    val customAvoidKeywords: List<String> = emptyList(),
+    val avoidPalmOil: Boolean = true,
+    val avoidNova4UltraProcessed: Boolean = true,
+    val avoidHighRiskAdditives: Boolean = true,
+    val isBuiltIn: Boolean = false
+) {
+    companion object {
+        const val PERSONAL_ID = "personal"
+        const val KIDS_NUT_FREE_ID = "kids_nut_free"
+        const val GLUTEN_FREE_ID = "strict_gluten_free"
+
+        fun defaultPresets(): List<HouseholdProfile> = listOf(
+            HouseholdProfile(
+                id = PERSONAL_ID,
+                name = "Personal",
+                monitoredAllergens = listOf("Milk", "Gluten", "Peanuts"),
+                avoidPalmOil = true,
+                avoidNova4UltraProcessed = true,
+                avoidHighRiskAdditives = true,
+                isBuiltIn = true
+            ),
+            HouseholdProfile(
+                id = KIDS_NUT_FREE_ID,
+                name = "Kids – Nut-Free",
+                monitoredAllergens = listOf("Peanuts", "Tree Nuts", "Sesame", "Eggs"),
+                avoidPalmOil = true,
+                avoidNova4UltraProcessed = true,
+                avoidHighRiskAdditives = true,
+                isBuiltIn = true
+            ),
+            HouseholdProfile(
+                id = GLUTEN_FREE_ID,
+                name = "Strict Gluten-Free",
+                monitoredAllergens = listOf("Gluten"),
+                isGlutenFree = true,
+                avoidPalmOil = false,
+                avoidNova4UltraProcessed = true,
+                avoidHighRiskAdditives = true,
+                isBuiltIn = true
+            )
+        )
+    }
+}
 
 data class UserProfile(
     val monitoredAllergens: Set<String> = setOf("Milk", "Gluten", "Peanuts"),
@@ -142,25 +206,55 @@ data class UserProfile(
     val avoidHighRiskAdditives: Boolean = true,
     val isSupporter: Boolean = false,
     val successfulOperationsCount: Int = 0,
+    val appLaunchCount: Int = 0,
+    val autoPromptCount: Int = 0,
     val installTimestamp: Long = 0L,
     val bannerDismissedTimestamp: Long = 0L,
-    val dialogDismissedTimestamp: Long = 0L
+    val dialogDismissedTimestamp: Long = 0L,
+    val activeProfileId: String = HouseholdProfile.PERSONAL_ID,
+    val activeProfileName: String = "Personal",
+    val savedProfiles: List<HouseholdProfile> = HouseholdProfile.defaultPresets(),
+    val pantryRemindersEnabled: Boolean = true
 ) {
+    /**
+     * Compact Home Screen Banner:
+     * Never shown to new users or Active Supporters.
+     * Requires 3+ completed operations, 3+ app launches, 2+ days since install, and 14-day dismiss cooldown.
+     */
     val shouldShowHomeBanner: Boolean
         get() {
             if (isSupporter) return false
             val now = System.currentTimeMillis()
-            val daysSinceInstall = if (installTimestamp > 0) (now - installTimestamp) / (1000 * 60 * 60 * 24) else 3 // Default eligible if first launch
+            val daysSinceInstall = if (installTimestamp > 0L) (now - installTimestamp) / (1000L * 60 * 60 * 24) else 0L
             val cooldownOver = (now - bannerDismissedTimestamp) > (14L * 24 * 60 * 60 * 1000)
-            return successfulOperationsCount >= 3 && daysSinceInstall >= 2 && cooldownOver
+            return successfulOperationsCount >= 3 && appLaunchCount >= 3 && daysSinceInstall >= 2 && cooldownOver
         }
 
-    val shouldTriggerAutoPrompt: Boolean
+    /**
+     * Value-Realization Milestone Prompt (ONLY checked after completing a core scan/analysis, NEVER at app start):
+     * Triggers at milestones (10, 25, 50 completed operations), max 3 times ever, 30-day cooldown, 2+ days installed.
+     */
+    val shouldTriggerMilestonePrompt: Boolean
+        get() {
+            if (isSupporter) return false
+            if (autoPromptCount >= 3) return false
+            val now = System.currentTimeMillis()
+            val daysSinceInstall = if (installTimestamp > 0L) (now - installTimestamp) / (1000L * 60 * 60 * 24) else 0L
+            val cooldownOver = (now - dialogDismissedTimestamp) > (30L * 24 * 60 * 60 * 1000)
+            val isMilestone = successfulOperationsCount in setOf(10, 25, 50)
+            return isMilestone && daysSinceInstall >= 2 && cooldownOver
+        }
+
+    /**
+     * Subtle post-scan support card below Product Detail results:
+     * Shown only after the user has derived clear value (5+ scans) and has not dismissed prompts recently.
+     */
+    val shouldShowPostScanSupport: Boolean
         get() {
             if (isSupporter) return false
             val now = System.currentTimeMillis()
-            val cooldownOver = (now - dialogDismissedTimestamp) > (30L * 24 * 60 * 60 * 1000)
-            return successfulOperationsCount >= 7 && cooldownOver
+            val cooldownOver = (now - bannerDismissedTimestamp) > (14L * 24 * 60 * 60 * 1000)
+            return successfulOperationsCount >= 5 && cooldownOver
         }
 }
 

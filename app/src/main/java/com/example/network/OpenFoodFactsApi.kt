@@ -1,6 +1,7 @@
 package com.example.network
 
 import com.example.model.OpenFoodFactsResponse
+import com.example.model.OpenFoodFactsSearchResponse
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import okhttp3.Interceptor
@@ -11,6 +12,7 @@ import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.Path
+import retrofit2.http.Query
 import java.util.concurrent.TimeUnit
 
 interface OpenFoodFactsApiService {
@@ -18,6 +20,14 @@ interface OpenFoodFactsApiService {
     suspend fun getProductByBarcode(
         @Path("barcode") barcode: String
     ): Response<OpenFoodFactsResponse>
+
+    @GET("api/v2/search")
+    suspend fun searchProductsByCategory(
+        @Query("categories_tags_en") categoryTag: String,
+        @Query("nutrition_grades_tags") nutritionGrades: String = "a,b",
+        @Query("page_size") pageSize: Int = 12,
+        @Query("sort_by") sortBy: String = "unique_scans_n"
+    ): Response<OpenFoodFactsSearchResponse>
 }
 
 object NetworkClient {
@@ -25,7 +35,7 @@ object NetworkClient {
 
     private val userAgentInterceptor = Interceptor { chain ->
         val request = chain.request().newBuilder()
-            .header("User-Agent", "NutriLens - Android Food Scanner - Version 1.0 (Contact: foodscan@nutrilens.app)")
+            .header("User-Agent", "NutriLens - Android Food Scanner - Version 1.2.0 (Contact: foodscan@nutrilens.app)")
             .build()
         chain.proceed(request)
     }

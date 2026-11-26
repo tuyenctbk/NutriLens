@@ -29,6 +29,10 @@ private val DarkColorScheme = darkColorScheme(
     onSurface = NutriOnSurfaceDark,
     surfaceVariant = NutriSurfaceVariantDark,
     onSurfaceVariant = NutriOnSurfaceVariantDark,
+    surfaceContainerLow = NutriSurfaceContainerLowDark,
+    surfaceContainer = NutriSurfaceContainerDark,
+    surfaceContainerHigh = NutriSurfaceContainerHighDark,
+    outlineVariant = NutriOutlineVariantDark
 )
 
 private val LightColorScheme = lightColorScheme(
@@ -50,6 +54,10 @@ private val LightColorScheme = lightColorScheme(
     onSurface = NutriOnSurfaceLight,
     surfaceVariant = NutriSurfaceVariantLight,
     onSurfaceVariant = NutriOnSurfaceVariantLight,
+    surfaceContainerLow = NutriSurfaceContainerLowLight,
+    surfaceContainer = NutriSurfaceContainerLight,
+    surfaceContainerHigh = NutriSurfaceContainerHighLight,
+    outlineVariant = NutriOutlineVariantLight
 )
 
 @Composable

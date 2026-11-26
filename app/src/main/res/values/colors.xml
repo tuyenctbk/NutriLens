@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Brand Palette for Native System Drawables & Window Splash -->
-    <color name="splash_background">#064E3B</color>
+    <color name="splash_background">#065C43</color>
     <color name="splash_background_dark">#022C22</color>
     <color name="emerald_primary">#10B981</color>
     <color name="emerald_mint">#34D399</color>

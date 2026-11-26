@@ -1,15 +1,10 @@
 package com.example.ui.components
 
-import android.content.ClipData
-import android.content.ClipboardManager
-import android.content.Context
-import android.content.Intent
-import android.net.Uri
-import android.widget.Toast
+import android.app.Activity
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -37,12 +32,15 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.TabRow
+import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
@@ -50,6 +48,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -67,15 +66,22 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.R
+import com.example.data.BillingUiState
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DonationDialog(
     isSupporter: Boolean,
+    billingState: BillingUiState = BillingUiState(),
     onDismiss: () -> Unit,
-    onConfirmSupporter: () -> Unit,
+    onRequestGooglePlayDonation: (DonationTier) -> Unit,
+    hostActivity: Activity? = null,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    val resolvedActivity = remember(hostActivity, context) {
+        hostActivity ?: context.findActivity()
+    }
     var selectedTab by remember { mutableIntStateOf(0) }
 
     AlertDialog(
@@ -97,7 +103,7 @@ fun DonationDialog(
                         imageVector = Icons.Filled.Favorite,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(22.dp)
                     )
                 }
                 Spacer(modifier = Modifier.width(12.dp))
@@ -114,7 +120,10 @@ fun DonationDialog(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                IconButton(onClick = onDismiss) {
+                IconButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.testTag("donation_close_button")
+                ) {
                     Icon(
                         imageVector = Icons.Filled.Close,
                         contentDescription = stringResource(R.string.close)
@@ -160,24 +169,27 @@ fun DonationDialog(
                     }
                 }
 
-                TabRow(selectedTabIndex = selectedTab) {
+                PrimaryTabRow(selectedTabIndex = selectedTab) {
                     Tab(
                         selected = selectedTab == 0,
                         onClick = { selectedTab = 0 },
-                        text = { Text(stringResource(R.string.donation_tab_google_play), fontSize = 11.sp) },
-                        icon = { Icon(Icons.Filled.ShoppingBag, contentDescription = null, modifier = Modifier.size(16.dp)) }
+                        text = { Text(stringResource(R.string.donation_tab_google_play), fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                        icon = { Icon(Icons.Filled.ShoppingBag, contentDescription = null, modifier = Modifier.size(16.dp)) },
+                        modifier = Modifier.testTag("donation_tab_play")
                     )
                     Tab(
                         selected = selectedTab == 1,
                         onClick = { selectedTab = 1 },
-                        text = { Text(stringResource(R.string.donation_tab_paypal), fontSize = 11.sp) },
-                        icon = { Icon(Icons.Filled.QrCode, contentDescription = null, modifier = Modifier.size(16.dp)) }
+                        text = { Text(stringResource(R.string.donation_tab_paypal), fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                        icon = { Icon(Icons.Filled.QrCode, contentDescription = null, modifier = Modifier.size(16.dp)) },
+                        modifier = Modifier.testTag("donation_tab_paypal")
                     )
                     Tab(
                         selected = selectedTab == 2,
                         onClick = { selectedTab = 2 },
-                        text = { Text(stringResource(R.string.donation_tab_kofi), fontSize = 11.sp) },
-                        icon = { Icon(Icons.Filled.Favorite, contentDescription = null, modifier = Modifier.size(16.dp)) }
+                        text = { Text(stringResource(R.string.donation_tab_kofi), fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                        icon = { Icon(Icons.Filled.Favorite, contentDescription = null, modifier = Modifier.size(16.dp)) },
+                        modifier = Modifier.testTag("donation_tab_kofi")
                     )
                 }
 
@@ -185,13 +197,11 @@ fun DonationDialog(
 
                 when (selectedTab) {
                     0 -> GooglePlayTiersSection(
-                        onSelectTier = { tierLabel ->
-                            onConfirmSupporter()
-                            Toast.makeText(context, context.getString(R.string.donation_processed_toast, tierLabel), Toast.LENGTH_LONG).show()
-                        }
+                        billingState = billingState,
+                        onSelectTier = onRequestGooglePlayDonation
                     )
-                    1 -> PayPalQrSection(context = context)
-                    2 -> KofiSection(context = context)
+                    1 -> PayPalQrSection(hostActivity = resolvedActivity)
+                    2 -> KofiSection(hostActivity = resolvedActivity)
                 }
             }
         },
@@ -205,8 +215,15 @@ fun DonationDialog(
 
 @Composable
 private fun GooglePlayTiersSection(
-    onSelectTier: (String) -> Unit
+    billingState: BillingUiState,
+    onSelectTier: (DonationTier) -> Unit
 ) {
+    val isBusy = billingState.processingTier != null
+    val tier1 = "${stringResource(DonationTier.ESPRESSO.labelRes).substringBefore("(").trim()} (${billingState.displayPriceFor(DonationTier.ESPRESSO)})"
+    val tier2 = "${stringResource(DonationTier.COFFEE.labelRes).substringBefore("(").trim()} (${billingState.displayPriceFor(DonationTier.COFFEE)})"
+    val tier3 = "${stringResource(DonationTier.MEAL.labelRes).substringBefore("(").trim()} (${billingState.displayPriceFor(DonationTier.MEAL)})"
+    val tier4 = "${stringResource(DonationTier.PATRON.labelRes).substringBefore("(").trim()} (${billingState.displayPriceFor(DonationTier.PATRON)})"
+
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
             text = stringResource(R.string.donation_google_play),
@@ -220,18 +237,32 @@ private fun GooglePlayTiersSection(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Button(
-                onClick = { onSelectTier("Espresso ($1.99)") },
-                modifier = Modifier.weight(1f),
+                onClick = { onSelectTier(DonationTier.ESPRESSO) },
+                enabled = !isBusy,
+                modifier = Modifier
+                    .weight(1f)
+                    .testTag("donation_tier_espresso"),
                 shape = RoundedCornerShape(10.dp)
             ) {
-                Text(stringResource(R.string.donation_tier_1), fontSize = 11.sp, textAlign = TextAlign.Center, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                if (billingState.processingTier == DonationTier.ESPRESSO) {
+                    CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onPrimary)
+                } else {
+                    Text(tier1, fontSize = 11.sp, textAlign = TextAlign.Center, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
             }
             Button(
-                onClick = { onSelectTier("Coffee ($4.99)") },
-                modifier = Modifier.weight(1f),
+                onClick = { onSelectTier(DonationTier.COFFEE) },
+                enabled = !isBusy,
+                modifier = Modifier
+                    .weight(1f)
+                    .testTag("donation_tier_coffee"),
                 shape = RoundedCornerShape(10.dp)
             ) {
-                Text(stringResource(R.string.donation_tier_2), fontSize = 11.sp, textAlign = TextAlign.Center, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                if (billingState.processingTier == DonationTier.COFFEE) {
+                    CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onPrimary)
+                } else {
+                    Text(tier2, fontSize = 11.sp, textAlign = TextAlign.Center, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
             }
         }
 
@@ -240,26 +271,45 @@ private fun GooglePlayTiersSection(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             FilledTonalButton(
-                onClick = { onSelectTier("Meal ($9.99)") },
-                modifier = Modifier.weight(1f),
+                onClick = { onSelectTier(DonationTier.MEAL) },
+                enabled = !isBusy,
+                modifier = Modifier
+                    .weight(1f)
+                    .testTag("donation_tier_meal"),
                 shape = RoundedCornerShape(10.dp)
             ) {
-                Text(stringResource(R.string.donation_tier_3), fontSize = 11.sp, textAlign = TextAlign.Center, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                if (billingState.processingTier == DonationTier.MEAL) {
+                    CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                } else {
+                    Text(tier3, fontSize = 11.sp, textAlign = TextAlign.Center, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
             }
             FilledTonalButton(
-                onClick = { onSelectTier("Supporter ($19.99)") },
-                modifier = Modifier.weight(1f),
+                onClick = { onSelectTier(DonationTier.PATRON) },
+                enabled = !isBusy,
+                modifier = Modifier
+                    .weight(1f)
+                    .testTag("donation_tier_patron"),
                 shape = RoundedCornerShape(10.dp)
             ) {
-                Text(stringResource(R.string.donation_tier_4), fontSize = 11.sp, textAlign = TextAlign.Center, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                if (billingState.processingTier == DonationTier.PATRON) {
+                    CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                } else {
+                    Text(tier4, fontSize = 11.sp, textAlign = TextAlign.Center, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
             }
         }
     }
 }
 
 @Composable
-private fun PayPalQrSection(context: Context) {
-    val paypalUrl = "https://paypal.me/NutriLensApp/5USD"
+private fun PayPalQrSection(hostActivity: Activity?) {
+    val context = LocalContext.current
+    val presets: List<Int?> = listOf(3, 5, 10, null)
+    var selectedAmount by remember { mutableStateOf<Int?>(5) }
+    val paypalUrl = remember(selectedAmount) { DonationBillingHelper.buildPayPalUrl(selectedAmount) }
+    val qrMatrix = remember(paypalUrl) { QrCodeGenerator.encode(paypalUrl) }
+    val clipLabel = stringResource(R.string.donation_paypal_clip_label)
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -272,50 +322,57 @@ private fun PayPalQrSection(context: Context) {
             fontWeight = FontWeight.Bold
         )
 
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Row(
+            modifier = Modifier.horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            presets.forEach { amount ->
+                FilterChip(
+                    selected = selectedAmount == amount,
+                    onClick = { selectedAmount = amount },
+                    label = {
+                        Text(
+                            text = if (amount != null) "$$amount" else stringResource(R.string.donation_any_amount),
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 12.sp
+                        )
+                    },
+                    modifier = Modifier.testTag("paypal_preset_${amount ?: "any"}")
+                )
+            }
+        }
+
         Spacer(modifier = Modifier.height(10.dp))
 
-        // Live Generated QR Code Bitmap representation
+        // Real ISO/IEC 18004 scannable QR code with standard white quiet zone
         Surface(
-            shape = RoundedCornerShape(12.dp),
+            shape = RoundedCornerShape(14.dp),
             color = Color.White,
             shadowElevation = 4.dp,
             modifier = Modifier
-                .size(150.dp)
-                .border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(12.dp))
+                .size(164.dp)
+                .border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(14.dp))
+                .testTag("paypal_live_qr")
         ) {
             Box(
                 contentAlignment = Alignment.Center,
-                modifier = Modifier.padding(12.dp)
+                modifier = Modifier.padding(14.dp)
             ) {
-                Canvas(modifier = Modifier.size(126.dp)) {
-                    val sizePx = size.width
-                    val cols = 9
-                    val cellSize = sizePx / cols
-
-                    // Draw QR finder corners
-                    drawRect(Color.Black, topLeft = Offset(0f, 0f), size = Size(cellSize * 3, cellSize * 3))
-                    drawRect(Color.White, topLeft = Offset(cellSize, cellSize), size = Size(cellSize, cellSize))
-
-                    drawRect(Color.Black, topLeft = Offset(cellSize * 6, 0f), size = Size(cellSize * 3, cellSize * 3))
-                    drawRect(Color.White, topLeft = Offset(cellSize * 7, cellSize), size = Size(cellSize, cellSize))
-
-                    drawRect(Color.Black, topLeft = Offset(0f, cellSize * 6), size = Size(cellSize * 3, cellSize * 3))
-                    drawRect(Color.White, topLeft = Offset(cellSize, cellSize * 7), size = Size(cellSize, cellSize))
-
-                    // QR data bits pattern
-                    val bitPattern = arrayOf(
-                        intArrayOf(4, 1), intArrayOf(4, 2), intArrayOf(5, 3),
-                        intArrayOf(3, 4), intArrayOf(4, 4), intArrayOf(5, 4),
-                        intArrayOf(2, 5), intArrayOf(6, 5), intArrayOf(1, 6),
-                        intArrayOf(4, 7), intArrayOf(5, 8), intArrayOf(7, 7)
-                    )
-
-                    for (bit in bitPattern) {
-                        drawRect(
-                            Color.Black,
-                            topLeft = Offset(bit[0] * cellSize, bit[1] * cellSize),
-                            size = Size(cellSize, cellSize)
-                        )
+                Canvas(modifier = Modifier.size(136.dp)) {
+                    val modules = qrMatrix.size
+                    val cellSize = size.width / modules
+                    for (r in 0 until modules) {
+                        for (c in 0 until modules) {
+                            if (qrMatrix[r][c]) {
+                                drawRect(
+                                    color = Color(0xFF0A1F18),
+                                    topLeft = Offset(c * cellSize, r * cellSize),
+                                    size = Size(cellSize + 0.5f, cellSize + 0.5f)
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -323,25 +380,46 @@ private fun PayPalQrSection(context: Context) {
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        OutlinedButton(
-            onClick = {
-                val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                val clip = ClipData.newPlainText(context.getString(R.string.donation_paypal_clip_label), paypalUrl)
-                clipboard.setPrimaryClip(clip)
-                Toast.makeText(context, context.getString(R.string.donation_link_copied), Toast.LENGTH_SHORT).show()
-            },
-            shape = RoundedCornerShape(10.dp)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)
         ) {
-            Icon(Icons.Filled.ContentCopy, contentDescription = null, modifier = Modifier.size(16.dp))
-            Spacer(modifier = Modifier.width(6.dp))
-            Text(stringResource(R.string.donation_copy_link), fontSize = 12.sp)
+            Button(
+                onClick = {
+                    DonationBillingHelper.openExternalDonationLink(
+                        context = context,
+                        hostActivity = hostActivity,
+                        url = paypalUrl,
+                        clipLabel = clipLabel
+                    )
+                },
+                shape = RoundedCornerShape(10.dp),
+                modifier = Modifier.testTag("paypal_open_button")
+            ) {
+                Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = null, modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(stringResource(R.string.donation_open_paypal), fontSize = 12.sp)
+            }
+            OutlinedButton(
+                onClick = {
+                    DonationBillingHelper.copyToClipboard(context, clipLabel, paypalUrl)
+                },
+                shape = RoundedCornerShape(10.dp),
+                modifier = Modifier.testTag("paypal_copy_button")
+            ) {
+                Icon(Icons.Filled.ContentCopy, contentDescription = null, modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(stringResource(R.string.donation_copy_link), fontSize = 12.sp)
+            }
         }
     }
 }
 
 @Composable
-private fun KofiSection(context: Context) {
-    val kofiUrl = "https://ko-fi.com/nutrilens"
+private fun KofiSection(hostActivity: Activity?) {
+    val context = LocalContext.current
+    val kofiUrl = DonationBillingHelper.KOFI_URL
+    val clipLabel = stringResource(R.string.donation_kofi_clip_label)
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -358,9 +436,9 @@ private fun KofiSection(context: Context) {
 
         Card(
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant
+                containerColor = MaterialTheme.colorScheme.surfaceContainer
             ),
-            shape = RoundedCornerShape(12.dp),
+            shape = RoundedCornerShape(14.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(
@@ -375,29 +453,42 @@ private fun KofiSection(context: Context) {
                 Text(
                     text = stringResource(R.string.donation_kofi_card_desc),
                     style = MaterialTheme.typography.bodySmall,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(12.dp))
-                Button(
-                    onClick = {
-                        try {
-                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(kofiUrl))
-                            context.startActivity(intent)
-                        } catch (e: Exception) {
-                            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                            val clip = ClipData.newPlainText(context.getString(R.string.donation_kofi_clip_label), kofiUrl)
-                            clipboard.setPrimaryClip(clip)
-                            Toast.makeText(context, context.getString(R.string.donation_link_copied), Toast.LENGTH_SHORT).show()
-                        }
-                    },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF29ABE2)
-                    ),
-                    shape = RoundedCornerShape(10.dp)
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(stringResource(R.string.donation_kofi_button), color = Color.White)
+                    Button(
+                        onClick = {
+                            DonationBillingHelper.openExternalDonationLink(
+                                context = context,
+                                hostActivity = hostActivity,
+                                url = kofiUrl,
+                                clipLabel = clipLabel
+                            )
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF29ABE2)
+                        ),
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.testTag("kofi_open_button")
+                    ) {
+                        Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(stringResource(R.string.donation_kofi_button), color = Color.White, fontSize = 12.sp)
+                    }
+                    OutlinedButton(
+                        onClick = {
+                            DonationBillingHelper.copyToClipboard(context, clipLabel, kofiUrl)
+                        },
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.testTag("kofi_copy_button")
+                    ) {
+                        Icon(Icons.Filled.ContentCopy, contentDescription = null, modifier = Modifier.size(16.dp))
+                    }
                 }
             }
         }

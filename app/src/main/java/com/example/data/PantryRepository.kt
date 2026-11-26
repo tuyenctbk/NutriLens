@@ -45,36 +45,6 @@ class PantryRepository(private val pantryDao: PantryDao) {
         pantryDao.clearPantry()
     }
 
-    suspend fun seedSamplePantry() = withContext(Dispatchers.IO) {
-        val samples = DemoCatalog.samples
-        val now = System.currentTimeMillis()
-        val day = 1000L * 60L * 60L * 24L
-
-        samples.forEachIndexed { index, sample ->
-            val product = DemoCatalog.getSample(sample.barcode)
-            if (product != null) {
-                // Stagger expiration dates: some expired, some expiring soon, some fresh
-                val expOffset = when (index) {
-                    0 -> -day * 2 // Expired 2 days ago
-                    1 -> day * 1  // Expiring tomorrow
-                    2 -> day * 3  // Expiring in 3 days
-                    else -> day * 20 // Fresh
-                }
-                val entity = PantryItemEntity(
-                    barcode = product.barcode,
-                    name = product.name,
-                    brand = product.brand,
-                    imageUrl = product.imageUrl,
-                    quantity = product.quantity,
-                    addedAt = now - (index * day * 2),
-                    expirationDate = now + expOffset,
-                    isConsumed = index == 5 // Last one consumed
-                )
-                pantryDao.insertOrReplace(entity)
-            }
-        }
-    }
-
     private fun PantryItemEntity.toDomain(): PantryItem {
         return PantryItem(
             barcode = barcode,

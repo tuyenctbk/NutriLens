@@ -5,7 +5,6 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -26,12 +25,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Analytics
-import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.PieChart
 import androidx.compose.material.icons.filled.QrCodeScanner
-import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -50,16 +44,15 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -70,23 +63,18 @@ import androidx.compose.ui.unit.sp
 import com.example.R
 import com.example.model.NutrimentsInfo
 import com.example.model.Product
-import com.example.ui.theme.Nova1
-import com.example.ui.theme.Nova2
-import com.example.ui.theme.Nova3
-import com.example.ui.theme.Nova4
-import com.example.ui.theme.NutriScoreA
-import com.example.ui.theme.NutriScoreB
-import com.example.ui.theme.NutriScoreC
-import com.example.ui.theme.NutriScoreD
-import com.example.ui.theme.NutriScoreE
+import com.example.ui.components.InteractiveMacroBreakdownCard
+import com.example.ui.components.MultiProductMacroBarChartCard
+import com.example.ui.components.NovaDistributionBarChartCard
+import com.example.ui.components.NutritionalInsightsCard
+import com.example.ui.components.PortfolioMacroKpiStrip
+import com.example.ui.components.PortfolioNutritionalInsightBanner
 
 // Standard FDA / WHO Daily Recommended Intake Values (2,000 kcal reference diet)
 private object DailyValues {
     const val SUGAR_MAX_G = 50.0 // WHO recommends <50g free sugars per day
     const val SAT_FAT_MAX_G = 20.0 // FDA Daily Value 20g
     const val SALT_MAX_G = 6.0 // WHO recommends <6g salt (2.3g sodium) per day
-    const val FAT_MAX_G = 78.0
-    const val CARBS_MAX_G = 275.0
     const val PROTEIN_GOAL_G = 50.0
     const val FIBER_GOAL_G = 28.0
 }
@@ -97,12 +85,10 @@ fun DashboardScreen(
     products: List<Product>,
     onSelectProductForScan: () -> Unit,
     onProductClick: (String) -> Unit,
-    onSeedSamples: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var selectedBarcode by remember(products) {
-        mutableStateOf(products.firstOrNull()?.barcode ?: "")
-    }
+    // Remember selected barcode across list updates (e.g. toggling favorites) instead of resetting
+    var selectedBarcode by rememberSaveable { mutableStateOf("") }
 
     val activeProduct = remember(products, selectedBarcode) {
         products.find { it.barcode == selectedBarcode } ?: products.firstOrNull()
@@ -141,56 +127,20 @@ fun DashboardScreen(
                 .padding(16.dp)
         ) {
             if (products.isEmpty()) {
-                // Empty state card
-                Card(
-                    shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
-                    modifier = Modifier.fillMaxWidth().testTag("dashboard_empty_card")
-                ) {
-                    Column(
-                        modifier = Modifier.padding(24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(64.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.primaryContainer),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Analytics,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                                modifier = Modifier.size(32.dp)
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = stringResource(R.string.dashboard_empty_title),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = stringResource(R.string.dashboard_empty_desc),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center
-                        )
-                        Spacer(modifier = Modifier.height(20.dp))
-                        Button(
-                            onClick = onSeedSamples,
-                            modifier = Modifier.fillMaxWidth().testTag("dashboard_seed_button")
-                        ) {
-                            Icon(Icons.Default.AutoAwesome, contentDescription = null)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(stringResource(R.string.populate_sample_scans))
-                        }
-                    }
-                }
+                DashboardEmptyStateCard(
+                    onScanClick = onSelectProductForScan
+                )
             } else {
-                // Product selector carousel
+                // Top Portfolio KPI Averages across all scanned Open Food Facts items
+                PortfolioMacroKpiStrip(products = products)
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Portfolio-level dietary insight across scanned food database items
+                PortfolioNutritionalInsightBanner(products = products)
+
+                Spacer(modifier = Modifier.height(18.dp))
+
                 Text(
                     text = stringResource(R.string.select_product_analyze),
                     style = MaterialTheme.typography.titleSmall,
@@ -228,55 +178,13 @@ fun DashboardScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
                 if (activeProduct != null) {
-                    // Active Product Header Card
-                    Card(
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onProductClick(activeProduct.barcode) }
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(14.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = activeProduct.brand,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Text(
-                                    text = activeProduct.name,
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                                Text(
-                                    text = stringResource(R.string.nutritional_breakdown_serving),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                            Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = MaterialTheme.colorScheme.primary
-                            ) {
-                                Text(
-                                    text = stringResource(R.string.inspect),
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onPrimary,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                                )
-                            }
-                        }
-                    }
+                    ActiveProductSummaryBanner(
+                        product = activeProduct,
+                        onInspect = { onProductClick(activeProduct.barcode) }
+                    )
 
                     Spacer(modifier = Modifier.height(20.dp))
 
@@ -289,118 +197,37 @@ fun DashboardScreen(
                                 verticalAlignment = Alignment.Top
                             ) {
                                 Column(modifier = Modifier.weight(1f)) {
-                                    // Visualization 1: Daily Recommended Intake Progress Bar Gauges
-                                    Text(
-                                        text = stringResource(R.string.daily_intake_title),
-                                        style = MaterialTheme.typography.titleSmall,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(
-                                        text = stringResource(R.string.daily_intake_subtitle),
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                    Spacer(modifier = Modifier.height(12.dp))
-
-                                    DailyValuesGaugeCard(nutriments = activeProduct.nutriments)
-                                }
-
-                                Column(modifier = Modifier.weight(1f)) {
-                                    // Visualization 2: Native Compose Canvas Donut Chart for Macronutrients Ratio
-                                    Text(
-                                        text = stringResource(R.string.macro_composition_title),
-                                        style = MaterialTheme.typography.titleSmall,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(
-                                        text = stringResource(R.string.macro_composition_subtitle),
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                    Spacer(modifier = Modifier.height(12.dp))
-
-                                    MacroDonutChartCard(nutriments = activeProduct.nutriments)
-
+                                    MacroCompositionSection(nutriments = activeProduct.nutriments)
                                     Spacer(modifier = Modifier.height(20.dp))
-
-                                    // Visualization 3: Overall Scan History Health Distribution
-                                    Text(
-                                        text = stringResource(R.string.history_quality_title),
-                                        style = MaterialTheme.typography.titleSmall,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.onSurface
+                                    NutritionalInsightsCard(nutriments = activeProduct.nutriments)
+                                    Spacer(modifier = Modifier.height(20.dp))
+                                    DailyIntakeSection(nutriments = activeProduct.nutriments)
+                                }
+                                Column(modifier = Modifier.weight(1f)) {
+                                    MultiProductComparisonSection(
+                                        products = products,
+                                        selectedBarcode = activeProduct.barcode,
+                                        onSelectProduct = { selectedBarcode = it }
                                     )
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(
-                                        text = stringResource(R.string.history_quality_subtitle),
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                    Spacer(modifier = Modifier.height(12.dp))
-
-                                    HistoryQualityGaugeCard(products = products)
+                                    Spacer(modifier = Modifier.height(20.dp))
+                                    HistoryQualitySection(products = products)
                                 }
                             }
                         } else {
                             Column(modifier = Modifier.fillMaxWidth()) {
-                                // Visualization 1: Daily Recommended Intake Progress Bar Gauges
-                                Text(
-                                    text = stringResource(R.string.daily_intake_title),
-                                    style = MaterialTheme.typography.titleSmall,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSurface
+                                MacroCompositionSection(nutriments = activeProduct.nutriments)
+                                Spacer(modifier = Modifier.height(20.dp))
+                                NutritionalInsightsCard(nutriments = activeProduct.nutriments)
+                                Spacer(modifier = Modifier.height(22.dp))
+                                MultiProductComparisonSection(
+                                    products = products,
+                                    selectedBarcode = activeProduct.barcode,
+                                    onSelectProduct = { selectedBarcode = it }
                                 )
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(
-                                    text = stringResource(R.string.daily_intake_subtitle),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Spacer(modifier = Modifier.height(12.dp))
-
-                                DailyValuesGaugeCard(nutriments = activeProduct.nutriments)
-
-                                Spacer(modifier = Modifier.height(24.dp))
-
-                                // Visualization 2: Native Compose Canvas Donut Chart for Macronutrients Ratio
-                                Text(
-                                    text = stringResource(R.string.macro_composition_title),
-                                    style = MaterialTheme.typography.titleSmall,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(
-                                    text = stringResource(R.string.macro_composition_subtitle),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Spacer(modifier = Modifier.height(12.dp))
-
-                                MacroDonutChartCard(nutriments = activeProduct.nutriments)
-
-                                Spacer(modifier = Modifier.height(24.dp))
-
-                                // Visualization 3: Overall Scan History Health Distribution
-                                Text(
-                                    text = stringResource(R.string.history_quality_title),
-                                    style = MaterialTheme.typography.titleSmall,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(
-                                    text = stringResource(R.string.history_quality_subtitle),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Spacer(modifier = Modifier.height(12.dp))
-
-                                HistoryQualityGaugeCard(products = products)
+                                Spacer(modifier = Modifier.height(22.dp))
+                                DailyIntakeSection(nutriments = activeProduct.nutriments)
+                                Spacer(modifier = Modifier.height(22.dp))
+                                HistoryQualitySection(products = products)
                             }
                         }
                     }
@@ -413,14 +240,205 @@ fun DashboardScreen(
 }
 
 @Composable
+private fun DashboardEmptyStateCard(
+    onScanClick: () -> Unit
+) {
+    Card(
+        shape = RoundedCornerShape(22.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag("dashboard_empty_card")
+    ) {
+        Column(
+            modifier = Modifier.padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(64.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primaryContainer),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Analytics,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier.size(32.dp)
+                )
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = stringResource(R.string.dashboard_empty_title),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = stringResource(R.string.dashboard_empty_desc),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(20.dp))
+            Button(
+                onClick = onScanClick,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("dashboard_open_scanner_button")
+            ) {
+                Icon(Icons.Default.QrCodeScanner, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(stringResource(R.string.scan_a_product))
+            }
+        }
+    }
+}
+
+@Composable
+private fun ActiveProductSummaryBanner(
+    product: Product,
+    onInspect: () -> Unit
+) {
+    Card(
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(18.dp))
+            .clickable(onClick = onInspect)
+            .testTag("dashboard_active_product_banner")
+    ) {
+        Row(
+            modifier = Modifier.padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = product.brand,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = product.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = stringResource(R.string.nutritional_breakdown_serving),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Surface(
+                shape = RoundedCornerShape(10.dp),
+                color = MaterialTheme.colorScheme.primary
+            ) {
+                Text(
+                    text = stringResource(R.string.inspect),
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun MacroCompositionSection(nutriments: NutrimentsInfo) {
+    Text(
+        text = stringResource(R.string.macro_composition_title),
+        style = MaterialTheme.typography.titleSmall,
+        fontWeight = FontWeight.Bold,
+        color = MaterialTheme.colorScheme.onSurface
+    )
+    Spacer(modifier = Modifier.height(4.dp))
+    Text(
+        text = stringResource(R.string.macro_composition_subtitle),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+    )
+    Spacer(modifier = Modifier.height(10.dp))
+    InteractiveMacroBreakdownCard(nutriments = nutriments)
+}
+
+@Composable
+private fun MultiProductComparisonSection(
+    products: List<Product>,
+    selectedBarcode: String?,
+    onSelectProduct: (String) -> Unit
+) {
+    Text(
+        text = stringResource(R.string.dashboard_multi_product_title),
+        style = MaterialTheme.typography.titleSmall,
+        fontWeight = FontWeight.Bold,
+        color = MaterialTheme.colorScheme.onSurface
+    )
+    Spacer(modifier = Modifier.height(4.dp))
+    Text(
+        text = stringResource(R.string.dashboard_multi_product_subtitle),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+    )
+    Spacer(modifier = Modifier.height(10.dp))
+    MultiProductMacroBarChartCard(
+        products = products,
+        selectedBarcode = selectedBarcode,
+        onSelectProduct = onSelectProduct
+    )
+}
+
+@Composable
+private fun DailyIntakeSection(nutriments: NutrimentsInfo) {
+    Text(
+        text = stringResource(R.string.daily_intake_title),
+        style = MaterialTheme.typography.titleSmall,
+        fontWeight = FontWeight.Bold,
+        color = MaterialTheme.colorScheme.onSurface
+    )
+    Spacer(modifier = Modifier.height(4.dp))
+    Text(
+        text = stringResource(R.string.daily_intake_subtitle),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+    )
+    Spacer(modifier = Modifier.height(10.dp))
+    DailyValuesGaugeCard(nutriments = nutriments)
+}
+
+@Composable
+private fun HistoryQualitySection(products: List<Product>) {
+    Text(
+        text = stringResource(R.string.history_quality_title),
+        style = MaterialTheme.typography.titleSmall,
+        fontWeight = FontWeight.Bold,
+        color = MaterialTheme.colorScheme.onSurface
+    )
+    Spacer(modifier = Modifier.height(4.dp))
+    Text(
+        text = stringResource(R.string.history_quality_subtitle),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+    )
+    Spacer(modifier = Modifier.height(10.dp))
+    NovaDistributionBarChartCard(products = products)
+}
+
+@Composable
 private fun DailyValuesGaugeCard(nutriments: NutrimentsInfo) {
     Card(
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            // Sugar Gauge
             val sugars = nutriments.sugars ?: 0.0
             val sugarPct = (sugars / DailyValues.SUGAR_MAX_G).toFloat()
             DailyValueProgressBar(
@@ -434,7 +452,6 @@ private fun DailyValuesGaugeCard(nutriments: NutrimentsInfo) {
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // Saturated Fat Gauge
             val satFat = nutriments.saturatedFat ?: 0.0
             val satFatPct = (satFat / DailyValues.SAT_FAT_MAX_G).toFloat()
             DailyValueProgressBar(
@@ -448,7 +465,6 @@ private fun DailyValuesGaugeCard(nutriments: NutrimentsInfo) {
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // Salt Gauge
             val salt = nutriments.salt ?: 0.0
             val saltPct = (salt / DailyValues.SALT_MAX_G).toFloat()
             DailyValueProgressBar(
@@ -462,7 +478,6 @@ private fun DailyValuesGaugeCard(nutriments: NutrimentsInfo) {
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // Fiber Gauge (Positive Goal)
             val fiber = nutriments.fiber ?: 0.0
             val fiberPct = (fiber / DailyValues.FIBER_GOAL_G).toFloat()
             DailyValueProgressBar(
@@ -470,13 +485,12 @@ private fun DailyValuesGaugeCard(nutriments: NutrimentsInfo) {
                 valueGrams = fiber,
                 maxGrams = DailyValues.FIBER_GOAL_G,
                 progressFraction = fiberPct,
-                barColor = Color(0xFF1976D2),
+                barColor = Color(0xFF0EA5E9),
                 warningNote = null
             )
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // Protein Gauge (Positive Goal)
             val protein = nutriments.proteins ?: 0.0
             val proteinPct = (protein / DailyValues.PROTEIN_GOAL_G).toFloat()
             DailyValueProgressBar(
@@ -484,7 +498,7 @@ private fun DailyValuesGaugeCard(nutriments: NutrimentsInfo) {
                 valueGrams = protein,
                 maxGrams = DailyValues.PROTEIN_GOAL_G,
                 progressFraction = proteinPct,
-                barColor = Color(0xFF388E3C),
+                barColor = Color(0xFF10B981),
                 warningNote = null
             )
         }
@@ -505,8 +519,8 @@ private fun DailyValueProgressBar(
 
     val animatedProgress by animateFloatAsState(
         targetValue = if (animateStart) progressFraction.coerceIn(0f, 1.5f) else 0f,
-        animationSpec = tween(durationMillis = 1000, easing = FastOutSlowInEasing),
-        label = "progress"
+        animationSpec = tween(durationMillis = 800, easing = FastOutSlowInEasing),
+        label = "dv_progress"
     )
 
     val pctInt = (progressFraction * 100).toInt()
@@ -528,7 +542,7 @@ private fun DailyValueProgressBar(
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = "${"%.1f".format(valueGrams)}g / ${maxGrams.toInt()}g ($pctInt%)",
+                text = stringResource(R.string.dv_percent_format, valueGrams, maxGrams.toInt(), pctInt),
                 fontWeight = FontWeight.Bold,
                 fontSize = 12.sp,
                 color = barColor,
@@ -538,26 +552,23 @@ private fun DailyValueProgressBar(
 
         Spacer(modifier = Modifier.height(6.dp))
 
-        // Progress track canvas
         Canvas(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(12.dp)
                 .clip(RoundedCornerShape(6.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant)
+                .background(barColor.copy(alpha = 0.14f))
         ) {
-            val width = size.width
-            val height = size.height
-
-            val fillWidth = (width * animatedProgress.coerceAtMost(1.0f))
-
-            drawRoundRect(
-                brush = Brush.horizontalGradient(
-                    colors = listOf(barColor.copy(alpha = 0.75f), barColor)
-                ),
-                size = Size(fillWidth, height),
-                cornerRadius = androidx.compose.ui.geometry.CornerRadius(6.dp.toPx(), 6.dp.toPx())
-            )
+            val fillWidth = size.width * animatedProgress.coerceAtMost(1.0f)
+            if (fillWidth > 1f) {
+                drawRoundRect(
+                    brush = Brush.horizontalGradient(
+                        colors = listOf(barColor.copy(alpha = 0.75f), barColor)
+                    ),
+                    size = Size(fillWidth, size.height),
+                    cornerRadius = CornerRadius(6.dp.toPx(), 6.dp.toPx())
+                )
+            }
         }
 
         warningNote?.let { note ->
@@ -568,245 +579,6 @@ private fun DailyValueProgressBar(
                 fontWeight = FontWeight.SemiBold,
                 color = barColor
             )
-        }
-    }
-}
-
-@Composable
-private fun MacroDonutChartCard(nutriments: NutrimentsInfo) {
-    val carbs = nutriments.carbs ?: 0.0
-    val fat = nutriments.fat ?: 0.0
-    val protein = nutriments.proteins ?: 0.0
-    val total = (carbs + fat + protein).coerceAtLeast(0.1)
-
-    val carbsPct = (carbs / total * 100).toInt()
-    val fatPct = (fat / total * 100).toInt()
-    val proteinPct = (protein / total * 100).toInt()
-
-    val carbColor = Color(0xFFFFA726)
-    val fatColor = Color(0xFFEF5350)
-    val proteinColor = Color(0xFF66BB6A)
-
-    Card(
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            // Native Donut Canvas
-            Box(
-                modifier = Modifier.size(100.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Canvas(modifier = Modifier.size(100.dp)) {
-                    val strokeWidth = 14.dp.toPx()
-                    val diameter = size.minDimension - strokeWidth
-                    val topLeft = Offset(strokeWidth / 2, strokeWidth / 2)
-                    val arcSize = Size(diameter, diameter)
-
-                    var startAngle = -90f
-
-                    // Carbs Arc
-                    val carbsSweep = (carbs / total * 360f).toFloat()
-                    drawArc(
-                        color = carbColor,
-                        startAngle = startAngle,
-                        sweepAngle = carbsSweep,
-                        useCenter = false,
-                        topLeft = topLeft,
-                        size = arcSize,
-                        style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
-                    )
-                    startAngle += carbsSweep
-
-                    // Fat Arc
-                    val fatSweep = (fat / total * 360f).toFloat()
-                    drawArc(
-                        color = fatColor,
-                        startAngle = startAngle,
-                        sweepAngle = fatSweep,
-                        useCenter = false,
-                        topLeft = topLeft,
-                        size = arcSize,
-                        style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
-                    )
-                    startAngle += fatSweep
-
-                    // Protein Arc
-                    val proteinSweep = (protein / total * 360f).toFloat()
-                    drawArc(
-                        color = proteinColor,
-                        startAngle = startAngle,
-                        sweepAngle = proteinSweep,
-                        useCenter = false,
-                        topLeft = topLeft,
-                        size = arcSize,
-                        style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
-                    )
-                }
-
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = "${total.toInt()}g",
-                        fontWeight = FontWeight.Black,
-                        fontSize = 16.sp
-                    )
-                    Text(
-                        text = stringResource(R.string.macros),
-                        fontSize = 11.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.width(16.dp))
-
-            // Legend
-            Column(modifier = Modifier.weight(1f)) {
-                MacroLegendRow(
-                    label = stringResource(R.string.macro_carbs),
-                    valueGrams = carbs,
-                    percentage = carbsPct,
-                    color = carbColor
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                MacroLegendRow(
-                    label = stringResource(R.string.macro_fats),
-                    valueGrams = fat,
-                    percentage = fatPct,
-                    color = fatColor
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                MacroLegendRow(
-                    label = stringResource(R.string.macro_proteins),
-                    valueGrams = protein,
-                    percentage = proteinPct,
-                    color = proteinColor
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun MacroLegendRow(label: String, valueGrams: Double, percentage: Int, color: Color) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween,
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.weight(1f)
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(8.dp)
-                    .clip(CircleShape)
-                    .background(color)
-            )
-            Spacer(modifier = Modifier.width(6.dp))
-            Text(
-                text = label,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
-        Spacer(modifier = Modifier.width(6.dp))
-        Text(
-            text = "${"%.1f".format(valueGrams)}g ($percentage%)",
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Bold,
-            color = color,
-            maxLines = 1
-        )
-    }
-}
-
-@Composable
-private fun HistoryQualityGaugeCard(products: List<Product>) {
-    val total = products.size.coerceAtLeast(1)
-    val nova4Count = products.count { it.novaGroup == 4 }
-    val cleanCount = products.count { it.novaGroup in 1..2 }
-    val palmOilCount = products.count { it.palmOilStatus == com.example.model.PalmOilStatus.CONTAINS }
-
-    val cleanPct = (cleanCount * 100) / total
-    val nova4Pct = (nova4Count * 100) / total
-
-    Card(
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = stringResource(R.string.clean_minimal_foods),
-                        fontWeight = FontWeight.Bold,
-                        style = MaterialTheme.typography.bodyMedium,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Text(
-                        text = stringResource(R.string.history_products_ratio_nova, cleanCount, total, "1-2"),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "$cleanPct%",
-                    fontWeight = FontWeight.Black,
-                    fontSize = 18.sp,
-                    color = Nova1
-                )
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = stringResource(R.string.ultra_processed_foods),
-                        fontWeight = FontWeight.Bold,
-                        style = MaterialTheme.typography.bodyMedium,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Text(
-                        text = stringResource(R.string.history_products_ratio_nova, nova4Count, total, "4"),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "$nova4Pct%",
-                    fontWeight = FontWeight.Black,
-                    fontSize = 18.sp,
-                    color = Nova4
-                )
-            }
         }
     }
 }

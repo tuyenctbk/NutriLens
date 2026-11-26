@@ -1,121 +1,151 @@
 language,app_name,short_description,full_description
-en,"NutriLens: Scan & Track Food","Scan barcodes, check ingredients, manage pantry, and track nutrition.","NutriLens helps you make informed food choices. Scan barcodes to instantly see ingredient analysis, nutritional values, and dietary compatibility.
+en,"NutriLens: Food & Label Scan","Scan barcodes, check allergens & additives, track macros, and manage pantry.","NutriLens helps you shop smarter and eat with confidence. Point your camera at any food barcode to instantly uncover ingredients, allergens, E-number additives, Nutri-Score, NOVA processing level, and personalized macronutrient insights powered by Open Food Facts.
 
-Manage your food with our pantry tracker to avoid waste. Set up your personalized dietary profile to receive alerts for allergens or custom ingredients. Visualize your nutritional intake with our dashboard and make healthy eating easier.
+Protect everyone at the table with customizable Household Dietary Profiles, compare products side by side, discover cleaner alternatives, and cut down food waste with smart Pantry expiration tracking.
 
 Key Features:
-- Instant Barcode Scanner: Identify food products using Open Food Facts.
-- Ingredient Analysis: Detect additives, allergens, and palm oil.
-- Dietary Alerts: Get warned if a product conflicts with your profile.
-- Pantry Management: Track expiration dates and consumption.
-- Nutritional Dashboard: Monitor your sugar, fat, and salt intake.
+- Instant Barcode Scanner: Fast ML Kit camera scanning with flashlight control, manual lookup, and offline Room caching.
+- Allergen & Additive Safety Engine: Real-time alerts for 14 major allergens, palm oil, NOVA 4 ultra-processed foods, high-risk E-numbers, and custom avoid keywords.
+- Household Dietary Profiles: Switch between Personal, Kids (Nut-Free), Gluten-Free, Vegan, Vegetarian, or custom family profiles in one tap.
+- Interactive Macronutrient Dashboard: Explore animated donut and stacked bar charts comparing carbs, sugars, fats, saturated fats, protein, and fiber by weight (g) or calories (kcal).
+- Nutritional Insights & Balance Score: Receive clear 0-100 dietary balance scores, diet-fit tags, and practical macro guidance tailored to every scanned item.
+- Side-by-Side Comparison & Healthier Swaps: Compare two products directly across Nutri-Score, NOVA, Eco-Score, additives, and nutrients, plus discover cleaner category swaps.
+- Offline Ingredient Label Analyzer: Paste or inspect ingredient lists and attach label photos when a product is not yet in the database.
+- Smart Pantry & Expiration Reminders: Track expiry dates, mark items consumed, filter expiring foods, and get gentle background reminders.
 
-NutriLens is designed for transparency and better health."
-es,"NutriLens: Escanea y Rastrea","Escanea códigos, revisa ingredientes, gestiona despensa y nutrición.","NutriLens te ayuda a tomar decisiones informadas sobre tus alimentos. Escanea códigos de barras para ver instantáneamente el análisis de ingredientes, valores nutricionales y compatibilidad dietética.
+Built for transparency, privacy, and offline speed—no account required and completely ad-free."
+es,"NutriLens: Escáner de Comida","Escanea códigos, revisa alérgenos, aditivos, macros, despensa e insights.","NutriLens te ayuda a comprar con inteligencia y comer con confianza. Apunta la cámara a cualquier código de barras para ver al instante ingredientes, alérgenos, aditivos E, Nutri-Score, nivel de procesamiento NOVA e información nutricional basada en Open Food Facts.
 
-Gestiona tus alimentos con nuestro rastreador de despensa para evitar el desperdicio. Configura tu perfil dietético personalizado para recibir alertas sobre alérgenos o ingredientes personalizados. Visualiza tu ingesta nutricional con nuestro panel y facilita una alimentación saludable.
+Protege a toda tu familia con Perfiles Dietéticos del Hogar, compara productos cara a cara, descubre alternativas más limpias y reduce el desperdicio con recordatorios de caducidad en tu despensa.
 
 Características Principales:
-- Escáner de código de barras instantáneo: Identifica productos alimenticios usando Open Food Facts.
-- Análisis de ingredientes: Detecta aditivos, alérgenos y aceite de palma.
-- Alertas dietéticas: Recibe avisos si un producto entra en conflicto con tu perfil.
-- Gestión de despensa: Rastrea fechas de caducidad y consumo.
-- Panel nutricional: Monitorea tu ingesta de azúcar, grasa y sal.
+- Escáner de Códigos Instantáneo: Lectura rápida con ML Kit, linterna, entrada manual y caché local sin conexión.
+- Motor de Seguridad de Alérgenos y Aditivos: Alertas inmediatas para 14 alérgenos comunes, aceite de palma, ultraprocesados NOVA 4, aditivos de alto riesgo y palabras clave personalizadas.
+- Perfiles Dietéticos del Hogar: Cambia con un toque entre Personal, Niños (Sin Frutos Secos), Sin Gluten, Vegano, Vegetariano o perfiles familiares personalizados.
+- Panel Interactivo de Macronutrientes: Gráficos animados de dona y barras apiladas para comparar carbohidratos, azúcares, grasas, proteínas y fibra en gramos o calorías.
+- Consejos Nutricionales y Puntuación de Equilibrio: Obtén una puntuación de balance 0-100, etiquetas dietéticas y recomendaciones claras por producto.
+- Comparador y Alternativas Saludables: Enfrenta dos productos en Nutri-Score, NOVA, Eco-Score y nutrientes, y descubre reemplazos más sanos.
+- Analizador de Etiquetas sin Conexión: Analiza listas de ingredientes y adjunta fotos cuando un producto no figure en la base de datos.
+- Despensa Inteligente y Recordatorios: Controla fechas de caducidad, marca productos consumidos y recibe avisos antes de que venzan.
 
-NutriLens está diseñado para la transparencia y una mejor salud."
-fr,"NutriLens: Scannez et Suivez","Scannez, vérifiez les ingrédients, gérez votre garde-manger et nutrition.","NutriLens vous aide à faire des choix alimentaires éclairés. Scannez les codes-barres pour voir instantanément l'analyse des ingrédients, les valeurs nutritionnelles et la compatibilité diététique.
+Diseñado para ofrecer transparencia, privacidad y rapidez sin anuncios ni registro."
+fr,"NutriLens : Scanner Aliment","Scannez les codes, détectez allergènes et additifs, suivez macros et stocks.","NutriLens vous aide à faire des choix alimentaires éclairés au quotidien. Scannez n'importe quel code-barres pour afficher immédiatement les ingrédients, allergènes, additifs E, Nutri-Score, groupe NOVA et conseils nutritionnels grâce à Open Food Facts.
 
-Gérez vos aliments avec notre suivi de garde-manger pour éviter le gaspillage. Configurez votre profil diététique personnalisé pour recevoir des alertes sur les allergènes ou les ingrédients personnalisés. Visualisez votre apport nutritionnel avec notre tableau de bord et facilitez une alimentation saine.
+Protégez chaque membre de la famille avec des Profils Alimentaires du Foyer, comparez deux produits côte à côte, trouvez des alternatives plus saines et évitez le gaspillage grâce au suivi du garde-manger.
 
-Caractéristiques Principales :
-- Scanner de code-barres instantané : Identifiez les produits alimentaires en utilisant Open Food Facts.
-- Analyse des ingrédients : Détectez les additifs, allergènes et huile de palme.
-- Alertes diététiques : Soyez averti si un produit entre en conflit avec votre profil.
-- Gestion du garde-manger : Suivez les dates de péremption et la consommation.
-- Tableau de bord nutritionnel : Surveillez votre apport en sucre, graisse et sel.
+Fonctionnalités Clés :
+- Scanner de Codes-Barres Instantané : Détection rapide ML Kit, lampe torche, saisie manuelle et cache hors ligne Room.
+- Analyse d'Allergènes et d'Additifs : Alertes immédiates pour 14 allergènes majeurs, huile de palme, aliments ultra-transformés NOVA 4, additifs à risque et mots-clés à éviter.
+- Profils Alimentaires du Foyer : Basculez en un geste entre Personnel, Enfants (Sans Fruits à Coque), Sans Gluten, Végan, Végétarien ou profils sur mesure.
+- Tableau de Bord des Macronutriments : Graphiques animés en anneau et barres empilées par poids (g) ou calories (kcal) pour glucides, sucres, lipides, protéines et fibres.
+- Conseils Nutritionnels et Score d'Équilibre : Score d'équilibre de 0 à 100, badges diététiques et recommandations pratiques sur vos produits.
+- Comparateur et Alternatives Plus Saines : Comparez deux produits sur le Nutri-Score, NOVA, l'Éco-Score et les nutriments, et explorez des options plus propres.
+- Analyseur d'Étiquettes Hors Ligne : Saisissez ou collez une liste d'ingrédients avec photo lorsque le produit est absent de la base.
+- Garde-Manger et Rappels de Péremption : Suivez les dates limites, cochez les produits consommés et recevez des rappels automatiques.
 
-NutriLens est conçu pour la transparence et une meilleure santé."
-de,"NutriLens: Scannen & Verfolgen","Scannen Sie Barcodes, prüfen Sie Inhaltsstoffe, verwalten Sie Vorräte.","NutriLens hilft Ihnen, fundierte Entscheidungen bei Lebensmitteln zu treffen. Scannen Sie Barcodes, um sofort Inhaltsstoffanalysen, Nährwerte und diätetische Kompatibilität zu sehen.
+Conçu pour la transparence, la confidentialité et la rapidité, sans compte ni publicité."
+de,"NutriLens: Food-Scanner","Barcodes scannen, Allergene & Zusatzstoffe prüfen, Makros & Vorrat planen.","NutriLens unterstützt Sie bei bewussten Einkaufsentscheidungen. Scannen Sie Lebensmittel-Barcodes, um sofort Zutaten, Allergene, E-Nummern, Nutri-Score, NOVA-Verarbeitungsgrad und verständliche Nährwert-Einblicke aus Open Food Facts anzuzeigen.
 
-Verwalten Sie Ihre Lebensmittel mit unserem Vorrats-Tracker, um Verschwendung zu vermeiden. Richten Sie Ihr personalisiertes Diätprofil ein, um Benachrichtigungen bei Allergien oder speziellen Inhaltsstoffen zu erhalten. Visualisieren Sie Ihre Nährstoffaufnahme mit unserem Dashboard und erleichtern Sie gesunde Ernährung.
+Schützen Sie Ihre Familie mit Haushalts-Ernährungsprofilen, vergleichen Sie Produkte direkt miteinander, entdecken Sie sauberere Alternativen und vermeiden Sie Lebensmittelverschwendung mit dem smarten Vorrats-Tracker.
 
-Hauptmerkmale:
-- Sofortiger Barcode-Scanner: Identifizieren Sie Lebensmittel mithilfe von Open Food Facts.
-- Inhaltsstoffanalyse: Erkennen Sie Zusatzstoffe, Allergene und Palmöl.
-- Diätetische Warnungen: Werden Sie gewarnt, wenn ein Produkt nicht zu Ihrem Profil passt.
-- Vorratsverwaltung: Verfolgen Sie Ablaufdaten und Verbrauch.
-- Nährwert-Dashboard: Überwachen Sie Ihre Zucker-, Fett- und Salzaufnahme.
+Hauptfunktionen:
+- Schneller Barcode-Scanner: Präzise ML-Kit-Erkennung mit Taschenlampe, manueller Eingabe und Offline-Zwischenspeicher.
+- Allergen- & Zusatzstoff-Schutz: Sofortwarnungen bei 14 Hauptallergenen, Palmöl, hochverarbeiteten NOVA-4-Produkten, bedenklichen E-Nummern und eigenen Ausschlussbegriffen.
+- Haushalts-Ernährungsprofile: Mit einem Tipp zwischen Persönlich, Kinder (Nussfrei), Glutenfrei, Vegan, Vegetarisch oder eigenen Profilen wechseln.
+- Interaktives Makronährstoff-Dashboard: Animierte Ring- und Balkendiagramme für Kohlenhydrate, Zucker, Fette, Proteine und Ballaststoffe nach Gewicht (g) oder Kalorien (kcal).
+- Nährwert-Tipps & Balance-Score: Klarer Balance-Score von 0 bis 100, Ernährungs-Tags und praxisnahe Hinweise zu jedem gescannten Produkt.
+- Direktvergleich & Gesündere Alternativen: Zwei Produkte nach Nutri-Score, NOVA, Eco-Score und Nährwerten vergleichen sowie bessere Optionen entdecken.
+- Offline-Zutatenanalyse: Zutatenlisten einfügen und Etikettenfotos anhängen, falls ein Artikel noch nicht in der Datenbank steht.
+- Vorratskammer & Ablauf-Erinnerungen: Haltbarkeitsdaten pflegen, verbrauchte Artikel abhaken und rechtzeitig Benachrichtigungen erhalten.
 
-NutriLens ist auf Transparenz und bessere Gesundheit ausgelegt."
-it,"NutriLens: Scansiona e Traccia","Scansiona codici, controlla ingredienti, gestisci dispensa e nutrizione.","NutriLens ti aiuta a fare scelte alimentari informate. Scansiona i codici a barre per vedere istantaneamente l'analisi degli ingredienti, i valori nutrizionali e la compatibilità dietetica.
+Transparent, privat, offline-fähig, ohne Konto und vollständig werbefrei."
+it,"NutriLens: Scanner Alimenti","Scansiona codici, rileva allergeni e additivi, monitora macro e dispensa.","NutriLens ti aiuta a scegliere gli alimenti con consapevolezza. Inquadra qualsiasi codice a barre per visualizzare subito ingredienti, allergeni, additivi E, Nutri-Score, livello NOVA e consigli nutrizionali basati su Open Food Facts.
 
-Gestisci i tuoi alimenti con il nostro tracker della dispensa per evitare sprechi. Configura il tuo profilo dietetico personalizzato per ricevere avvisi su allergeni o ingredienti personalizzati. Visualizza il tuo apporto nutrizionale con il nostro cruscotto e rendi più facile un'alimentazione sana.
+Tutela tutta la famiglia con i Profili Alimentari Familiari, confronta due prodotti fianco a fianco, scopri alternative più pulite e riduci gli sprechi con il monitoraggio delle scadenze in dispensa.
 
-Caratteristiche Principali:
-- Scanner di codici a barre istantaneo: Identifica i prodotti alimentari utilizzando Open Food Facts.
-- Analisi degli ingredienti: Rileva additivi, allergeni e olio di palma.
-- Avvisi dietetici: Ricevi avvisi se un prodotto è in conflitto con il tuo profilo.
-- Gestione della dispensa: Traccia le date di scadenza e il consumo.
-- Cruscotto nutrizionale: Monitora il tuo apporto di zucchero, grassi e sale.
+Funzionalità Principali:
+- Scanner Codici a Barre Istantaneo: Rilevamento rapido ML Kit, torcia, inserimento manuale e cache locale offline.
+- Motore Sicurezza Allergeni e Additivi: Avvisi immediati per 14 allergeni principali, olio di palma, ultra-processati NOVA 4, additivi a rischio e parole chiave personalizzate.
+- Profili Alimentari Familiari: Passa con un tocco tra Personale, Bambini (Senza Frutta a Guscio), Senza Glutine, Vegano, Vegetariano o profili personalizzati.
+- Dashboard Interattiva Macronutrienti: Grafici animati a ciambella e barre impilate per carboidrati, zuccheri, grassi, proteine e fibre in grammi o calorie.
+- Consigli Nutrizionali e Punteggio Equilibrio: Valutazione 0-100, tag dietetici e suggerimenti pratici su ogni alimento scansionato.
+- Confronto Prodotti e Alternative Sane: Metti a confronto Nutri-Score, NOVA, Eco-Score e valori nutrizionali e trova sostituti migliori.
+- Analizzatore Etichette Offline: Incolla liste ingredienti e allega foto quando un prodotto non è ancora presente nel database.
+- Dispensa Intelligente e Promemoria: Gestisci le scadenze, segna gli alimenti consumati e ricevi avvisi prima della scadenza.
 
-NutriLens è progettato per la trasparenza e una salute migliore."
-pt,"NutriLens: Escaneie e Rastreie","Escaneie códigos, verifique ingredientes, gerencie despensa e nutrição.","O NutriLens ajuda você a fazer escolhas alimentares informadas. Escaneie códigos de barras para ver instantaneamente a análise de ingredientes, valores nutricionais e compatibilidade dietética.
+Progettata per trasparenza, privacy e velocità offline: nessun account richiesto e zero pubblicità."
+pt,"NutriLens: Scanner de Comida","Escaneie códigos, veja alérgenos, aditivos, macros, insights e despensa.","O NutriLens ajuda você a comprar melhor e se alimentar com segurança. Aponte a câmera para qualquer código de barras e visualize na hora ingredientes, alérgenos, aditivos E, Nutri-Score, grau NOVA e recomendações nutricionais com dados do Open Food Facts.
 
-Gerencie seus alimentos com nosso rastreador de despensa para evitar desperdícios. Configure seu perfil dietético personalizado para receber alertas sobre alérgenos ou ingredientes personalizados. Visualize sua ingestão nutricional com nosso painel e facilite uma alimentação saudável.
+Proteja toda a família com Perfis Alimentares da Casa, compare produtos lado a lado, descubra opções mais limpas e evite desperdícios com lembretes de validade na despensa.
 
 Principais Recursos:
-- Scanner de código de barras instantâneo: Identifique produtos alimentícios usando o Open Food Facts.
-- Análise de ingredientes: Detecte aditivos, alérgenos e óleo de palma.
-- Alertas dietéticos: Seja avisado se um produto entrar em conflito com seu perfil.
-- Gestão de despensa: Rastreie datas de validade e consumo.
-- Painel nutricional: Monitore sua ingestão de açúcar, gordura e sal.
+- Scanner de Código de Barras Instantâneo: Leitura ágil com ML Kit, lanterna, busca manual e cache local offline.
+- Alertas de Alérgenos e Aditivos: Avisos em tempo real para 14 alérgenos principais, óleo de palma, ultraprocessados NOVA 4, aditivos de risco e palavras personalizadas.
+- Perfis Alimentares da Casa: Alterne com um toque entre Pessoal, Crianças (Sem Oleaginosas), Sem Glúten, Vegano, Vegetariano ou perfis próprios.
+- Painel Interativo de Macronutrientes: Gráficos animados de rosca e barras empilhadas comparando carboidratos, açúcares, gorduras, proteínas e fibras por peso (g) ou calorias (kcal).
+- Insights Nutricionais e Índice de Equilíbrio: Pontuação de 0 a 100, selos de perfil alimentar e orientações claras para cada item escaneado.
+- Comparação Lado a Lado e Trocas Saudáveis: Compare Nutri-Score, NOVA, Eco-Score e nutrientes entre dois produtos e encontre substitutos mais limpos.
+- Analisador de Rótulos Offline: Analise listas de ingredientes e anexe fotos quando o produto não estiver na base.
+- Despensa Inteligente e Lembretes: Controle datas de validade, marque itens consumidos e receba alertas antes do vencimento.
 
-O NutriLens foi projetado para transparência e melhor saúde."
-ja,"NutriLens: スキャンと追跡","バーコードをスキャンし、成分を確認、パントリー管理、栄養追跡。","NutriLensは、情報に基づいた食品の選択を支援します。バーコードをスキャンすると、成分分析、栄養価、食事の互換性が即座に表示されます。
+Feito para transparência, privacidade e rapidez offline, sem conta e sem anúncios."
+ja,"NutriLens: 食品スキャンと栄養管理","バーコード読取で添加物・アレルゲン確認、栄養バランス分析、パントリー期限管理。","NutriLensは毎日の食品選びをわかりやすくサポートする食品スキャナー＆栄養管理アプリです。バーコードを読み取るだけで、Open Food Factsのデータをもとに原材料、アレルゲン、食品添加物（E番号）、Nutri-Score、NOVA加工度、栄養アドバイスを瞬時に表示します。
 
-パントリートラッカーで食品を管理し、無駄を防ぎます。パーソナライズされた食事プロファイルを設定して、アレルギーやカスタム成分に関するアラートを受け取ります。ダッシュボードで栄養摂取量を視覚化し、健康的な食生活を容易にします。
+家族ごとの食事プロファイル設定、商品の並べて比較、よりヘルシーな代替候補の提案、さらに賞味期限リマインダー付きパントリー管理で食品ロスも減らせます。
 
-主な機能:
-- 即時バーコードスキャナー: Open Food Factsを使用して食品を特定します。
-- 成分分析: 添加物、アレルゲン、パーム油を検出します。
-- 食事アラート: プロファイルと一致しない食品があれば警告を受けます。
-- パントリー管理: 賞味期限と消費を追跡します。
-- 栄養ダッシュボード: 砂糖、脂肪、塩分の摂取量を監視します。
+主な機能：
+- 高速バーコードスキャナー：ML Kitによる即時認識、ライト切替、手動入力、オフラインキャッシュに対応。
+- アレルゲン＆添加物アラート：主要なアレルゲン、パーム油、超加工食品（NOVA 4）、注意が必要な添加物、カスタムNGワードを自動検出。
+- ファミリー食事プロファイル：個人用、キッズ（ナッツ不使用）、グルテンフリー、ヴィーガン、ベジタリアン、独自プロファイルをワンタップで切替。
+- インタラクティブ栄養ダッシュボード：炭水化物・糖類・脂質・タンパク質・食物繊維を重量（g）またはカロリー（kcal）別に円グラフ・積み上げ棒グラフで可視化。
+- 栄養インサイト＆バランススコア：0〜100のバランススコアと食事傾向タグ、わかりやすい栄養アドバイスを提示。
+- 商品比較＆ヘルシー代替提案：2商品をNutri-Score・NOVA・Eco-Score・栄養成分で並べて比較し、よりクリーンな代替品を発見。
+- オフライン原材料ラベル解析：データベース未登録の商品も、原材料テキスト入力とラベル写真添付で即座にチェック。
+- スマートパントリー管理：賞味期限や消費済みを管理し、期限が近づいた食品を通知でお知らせ。
 
-NutriLensは透明性と健康向上のために設計されています。"
-ko,"NutriLens: 스캔 및 추적","바코드 스캔, 성분 확인, 팬트리 관리 및 영양 추적.","NutriLens는 정보에 입각한 식품 선택을 도와줍니다. 바코드를 스캔하면 성분 분석, 영양가 및 식이 적합성을 즉시 확인할 수 있습니다.
+アカウント登録不要・広告なし・プライバシー重視で、オフラインでも快適に使えます。"
+ko,"NutriLens: 식품 스캔 및 영양 분석","바코드 스캔으로 첨가물·알레르기 확인, 매크로 대시보드, 식단 조언, 팬트리 관리.","NutriLens는 더 건강하고 투명한 식품 선택을 돕는 바코드 스캐너 및 영양 분석 앱입니다. 식품 바코드를 스캔하면 Open Food Facts 데이터를 기반으로 원재료, 알레르기 유발 물질, 식품 첨가물(E번호), Nutri-Score, NOVA 가공 단계 및 맞춤형 영양 조언을 즉시 확인할 수 있습니다.
 
-팬트리 트래커로 식품을 관리하여 낭비를 방지하세요. 맞춤형 식이 프로필을 설정하여 알레르기나 특정 성분에 대한 경고를 받으세요. 대시보드로 영양 섭취량을 시각화하여 건강한 식단을 더 쉽게 유지하세요.
+가족별 식이 프로필로 모두가 안심하고 장을 보고, 제품 나란히 비교와 건강한 대체품 추천, 유통기한 알림이 포함된 팬트리 관리로 음식물 낭비까지 줄여 보세요.
 
 주요 기능:
-- 즉시 바코드 스캐너: Open Food Facts를 사용하여 식품을 식별합니다.
-- 성분 분석: 첨가물, 알레르기 유발 물질, 팜유를 감지합니다.
-- 식이 경고: 프로필과 충돌하는 제품이 있으면 경고를 받습니다.
-- 팬트리 관리: 유통기한과 소비를 추적합니다.
-- 영양 대시보드: 설탕, 지방, 염분 섭취량을 모니터링합니다.
+- 빠른 바코드 스캐너: ML Kit 카메라 인식, 손전등 제어, 수동 입력 및 오프라인 로컬 캐시 지원.
+- 알레르기 및 첨가물 안전 분석: 14가지 주요 알레르기 성분, 팜유, 초가공식품(NOVA 4), 고위험 첨가물 및 사용자 지정 제외 키워드 실시간 경고.
+- 가족 식이 프로필: 개인, 어린이(견과류 제외), 글루텐 프리, 비건, 채식 또는 맞춤 가족 프로필을 원탭으로 전환.
+- 인터랙티브 매크로 대시보드: 탄수화물, 당류, 지방, 포화지방, 단백질, 식이섬유를 중량(g) 또는 칼로리(kcal) 기준으로 도넛 및 누적 막대 차트로 시각화.
+- 영양 인사이트 및 균형 점수: 제품별 0~100점 균형 점수, 식단 태그, 알기 쉬운 영양 가이드를 제공.
+- 나란히 비교 및 건강한 대안 추천: 두 제품의 Nutri-Score, NOVA, Eco-Score, 영양성분을 직접 비교하고 더 깨끗한 대체 식품을 탐색.
+- 오프라인 원재료 라벨 분석기: 데이터베이스에 없는 제품도 원재료 텍스트 입력과 라벨 사진 첨부로 즉시 분석.
+- 스마트 팬트리 및 유통기한 알림: 유통기한 추적, 소비 완료 표시 및 만료 임박 알림 제공.
 
-NutriLens는 투명성과 건강 증진을 위해 설계되었습니다."
-zh,"NutriLens: 扫描与跟踪","扫描条形码，检查成分，管理储藏室并跟踪营养。","NutriLens 帮助您做出明智的食品选择。扫描条形码即可立即查看成分分析、营养价值和饮食兼容性。
+계정 가입과 광고 없이, 개인정보를 지키며 오프라인에서도 빠르게 사용할 수 있습니다."
+zh,"NutriLens：食品扫描与营养分析","扫码查添加剂与过敏原、宏量营养图表、膳食平衡建议、产品对比与储藏室保质期提醒。","NutriLens 助您轻松读懂食品配料表，做出更安心的饮食选择。对准食品条形码即可即时获取 Open Food Facts 提供的配料解析、过敏原提示、E 编码添加剂、Nutri-Score、NOVA 加工分级以及个性化宏量营养建议。
 
-使用我们的储藏室追踪器管理您的食品，避免浪费。设置您的个性化饮食档案，以接收有关过敏原或自定义成分的警报。通过我们的仪表板可视化您的营养摄入量，使健康饮食更轻松。
+支持多成员家庭饮食档案、双产品并排对比、更健康替代推荐，以及带临期提醒的智能储藏室管理，帮您减少食物浪费。
 
-主要功能：
-- 即时条形码扫描仪：使用 Open Food Facts 识别食品。
-- 成分分析：检测添加剂、过敏原和棕榈油。
-- 饮食警报：如果产品与您的档案冲突，将收到警告。
-- 储藏室管理：跟踪保质期和消耗情况。
-- 营养仪表板：监控您的糖、脂肪和盐分摄入量。
+核心功能：
+- 极速条码扫描：基于 ML Kit 的相机实时识别，支持手电筒、手动输入条码与本地离线缓存。
+- 过敏原与添加剂安全引擎：即时预警 14 种常见过敏原、棕榈油、NOVA 4 超加工食品、高风险添加剂及自定义忌口关键词。
+- 家庭饮食档案：一键切换个人、儿童（无坚果）、无麸质、纯素、蛋奶素或自定义家庭饮食方案。
+- 交互式宏量营养仪表板：通过动态环形图与堆叠柱状图，按克重（g）或热量（kcal）直观查看碳水、糖分、脂肪、蛋白质与膳食纤维。
+- 营养洞察与平衡评分：为每件扫描食品提供 0-100 营养平衡分、饮食标签与通俗实用的膳食建议。
+- 双品对比与健康替代：并排对比两款产品的 Nutri-Score、NOVA、Eco-Score 与营养成分，发现更洁净的同品类替代品。
+- 离线配料标签分析器：当商品尚未收录时，可粘贴配料表并附带标签照片进行本地即时检测。
+- 智能储藏室与临期提醒：记录保质期、勾选已食用，并在食品临近过期前发送温和提醒。
 
-NutriLens 专为透明度和更好的健康而设计。"
-nl,"NutriLens: Scan & Volg","Scan streepjescodes, controleer ingrediënten, beheer voorraad en voeding.","NutriLens helpt u weloverwogen voedselkeuzes te maken. Scan streepjescodes om direct ingrediëntenanalyses, voedingswaarden en dieetcompatibiliteit te zien.
+无需登录、完全无广告、注重隐私，离线也能流畅使用。"
+nl,"NutriLens: Voeding & Etiket","Scan barcodes, check allergenen en additieven, volg macro's en voorraad.","NutriLens helpt u bewust boodschappen te doen en met vertrouwen te eten. Scan elke streepjescode om direct ingrediënten, allergenen, E-nummers, Nutri-Score, NOVA-verwerkingsgraad en persoonlijke voedingsinzichten via Open Food Facts te bekijken.
 
-Beheer uw voedsel met onze voorraadtracker om verspilling te voorkomen. Stel uw gepersonaliseerde dieetprofiel in om waarschuwingen te ontvangen voor allergenen of aangepaste ingrediënten. Visualiseer uw voedingsinname met ons dashboard en maak gezond eten gemakkelijker.
+Bescherm het hele gezin met Huishoudprofielen, vergelijk producten naast elkaar, ontdek schonere alternatieven en voorkom voedselverspilling met slimme houdbaarheidsherinneringen.
 
-Belangrijkste Kenmerken:
-- Directe Streepjescodescanner: Identificeer voedingsmiddelen met Open Food Facts.
-- Ingrediëntenanalyse: Detecteer additieven, allergenen en palmolie.
-- Dieetwaarschuwingen: Ontvang waarschuwingen als een product botst met uw profiel.
-- Voorraadbeheer: Houd vervaldatums en consumptie bij.
-- Voedingsdashboard: Monitor uw suiker-, vet- en zoutinname.
+Belangrijkste Functies:
+- Directe Streepjescodescanner: Snelle ML Kit-herkenning met zaklamp, handmatige invoer en offline Room-cache.
+- Allergenen- & Additievenbewaking: Directe meldingen voor 14 hoofdallergenen, palmolie, ultrabewerkte NOVA 4-producten, risicovolle E-nummers en eigen vermijdwoorden.
+- Huishoudelijke Dieetprofielen: Schakel met één tik tussen Persoonlijk, Kinderen (Notenvrij), Glutenvrij, Veganistisch, Vegetarisch of eigen gezinsprofielen.
+- Interactief Macronutriënten-Dashboard: Geanimeerde ring- en staafdiagrammen voor koolhydraten, suikers, vetten, eiwitten en vezels in gram (g) of calorieën (kcal).
+- Voedingsinzichten & Balansscore: Heldere balansscore van 0 tot 100, dieetlabels en praktisch voedingsadvies bij elk gescand product.
+- Vergelijken & Gezondere Alternatieven: Zet twee producten naast elkaar op Nutri-Score, NOVA, Eco-Score en voedingswaarden en ontdek betere keuzes.
+- Offline Etiketanalysator: Plak ingrediëntenlijsten en voeg etiketfoto's toe als een product nog niet in de database staat.
+- Slimme Voorraadkast & Meldingen: Houd houdbaarheidsdatums bij, vink geconsumeerde items af en ontvang op tijd een herinnering.
 
-NutriLens is ontworpen voor transparantie en een betere gezondheid."
+Gebouwd voor transparantie, privacy en snelheid—zonder account en volledig advertentievrij."

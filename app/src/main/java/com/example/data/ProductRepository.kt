@@ -7,16 +7,23 @@ import com.example.model.NutrimentsInfo
 import com.example.model.PalmOilStatus
 import com.example.model.Product
 import com.example.model.ProductDto
+import com.example.model.UserProfile
 import com.example.network.NetworkClient
 import com.example.network.OpenFoodFactsApiService
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import java.util.Locale
+
+sealed class ProductLookupException(message: String) : Exception(message) {
+    class NotFound(val barcode: String) : ProductLookupException("Product not found (Barcode: $barcode)")
+    class NetworkUnavailable(val detail: String?) : ProductLookupException(detail ?: "Network error")
+}
 
 /**
  * Repository interface defining the single source of truth contract
@@ -71,9 +78,15 @@ interface ProductRepository {
     suspend fun clearHistory()
 
     /**
-     * Seed initial demo products into the Room cache for offline and preview experience.
+     * Persist a custom analyzed product (e.g. from Ingredient Label Analyzer) into Room history.
      */
-    suspend fun seedSampleScans()
+    suspend fun saveCustomProduct(product: Product)
+
+    /**
+     * Discovers healthier alternative products tailored to the active household dietary profile.
+     * Queries Open Food Facts Search API v2 by category when online and merges with Room cache.
+     */
+    suspend fun getHealthierAlternatives(product: Product, profile: UserProfile): List<Product>
 
     companion object {
         /**
@@ -82,8 +95,16 @@ interface ProductRepository {
         operator fun invoke(
             productDao: ProductDao,
             apiService: OpenFoodFactsApiService = NetworkClient.apiService,
-            ioDispatcher: CoroutineDispatcher = Dispatchers.IO
-        ): ProductRepository = DefaultProductRepository(productDao, apiService, ioDispatcher)
+            ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+            defaultProductName: String = "Unnamed Food Product",
+            defaultBrandName: String = "Brand Unknown"
+        ): ProductRepository = DefaultProductRepository(
+            productDao = productDao,
+            apiService = apiService,
+            ioDispatcher = ioDispatcher,
+            defaultProductName = defaultProductName,
+            defaultBrandName = defaultBrandName
+        )
     }
 }
 
@@ -94,7 +115,9 @@ interface ProductRepository {
 class DefaultProductRepository(
     private val productDao: ProductDao,
     private val apiService: OpenFoodFactsApiService = NetworkClient.apiService,
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    private val defaultProductName: String = "Unnamed Food Product",
+    private val defaultBrandName: String = "Brand Unknown"
 ) : ProductRepository {
 
     override val historyProducts: Flow<List<Product>> = productDao.getAllScanned()
@@ -114,59 +137,7 @@ class DefaultProductRepository(
     }
 
     override fun getProductFlow(barcode: String, forceRefresh: Boolean): Flow<Result<Product>> = flow {
-        val cleanBarcode = barcode.trim()
-        if (cleanBarcode.isBlank()) {
-            emit(Result.failure(IllegalArgumentException("Barcode cannot be blank")))
-            return@flow
-        }
-
-        // 1. Check local Room database cache first
-        val cachedEntity = productDao.getByBarcodeSync(cleanBarcode)
-        if (cachedEntity != null && !forceRefresh) {
-            emit(Result.success(cachedEntity.toDomain(isOfflineCached = true)))
-            return@flow
-        }
-
-        // 2. Fetch from Open Food Facts API
-        try {
-            val response = apiService.getProductByBarcode(cleanBarcode)
-            val body = response.body()
-            if (response.isSuccessful && body?.status == 1 && body.product != null) {
-                val dto = body.product
-                val product = mapDtoToProduct(cleanBarcode, dto, cachedEntity?.isFavorite ?: false)
-
-                // 3. Cache freshly fetched product into Room database
-                productDao.insertOrReplace(product.toEntity())
-                emit(Result.success(product.copy(isOfflineCached = false)))
-            } else {
-                // If network succeeded but product not found in Open Food Facts database
-                if (cachedEntity != null) {
-                    emit(Result.success(cachedEntity.toDomain(isOfflineCached = true)))
-                } else {
-                    // Check fallback demo catalog (guarantees offline/sample demo usability)
-                    val sample = DemoCatalog.getSample(cleanBarcode)
-                    if (sample != null) {
-                        productDao.insertOrReplace(sample.toEntity())
-                        emit(Result.success(sample))
-                    } else {
-                        emit(Result.failure(Exception("Product not found in Open Food Facts database (Barcode: $cleanBarcode)")))
-                    }
-                }
-            }
-        } catch (e: Exception) {
-            // 4. Offline fallback on network exception
-            if (cachedEntity != null) {
-                emit(Result.success(cachedEntity.toDomain(isOfflineCached = true)))
-            } else {
-                val sample = DemoCatalog.getSample(cleanBarcode)
-                if (sample != null) {
-                    productDao.insertOrReplace(sample.toEntity())
-                    emit(Result.success(sample))
-                } else {
-                    emit(Result.failure(Exception("Offline & not cached. Check internet connection. (${e.localizedMessage ?: "Network error"})")))
-                }
-            }
-        }
+        emit(getProduct(barcode, forceRefresh))
     }.flowOn(ioDispatcher)
 
     override suspend fun getProduct(barcode: String, forceRefresh: Boolean): Result<Product> = withContext(ioDispatcher) {
@@ -196,26 +167,14 @@ class DefaultProductRepository(
                 if (cachedEntity != null) {
                     Result.success(cachedEntity.toDomain(isOfflineCached = true))
                 } else {
-                    val sample = DemoCatalog.getSample(cleanBarcode)
-                    if (sample != null) {
-                        productDao.insertOrReplace(sample.toEntity())
-                        Result.success(sample)
-                    } else {
-                        Result.failure(Exception("Product not found in Open Food Facts database (Barcode: $cleanBarcode)"))
-                    }
+                    Result.failure(ProductLookupException.NotFound(cleanBarcode))
                 }
             }
         } catch (e: Exception) {
             if (cachedEntity != null) {
                 Result.success(cachedEntity.toDomain(isOfflineCached = true))
             } else {
-                val sample = DemoCatalog.getSample(cleanBarcode)
-                if (sample != null) {
-                    productDao.insertOrReplace(sample.toEntity())
-                    Result.success(sample)
-                } else {
-                    Result.failure(Exception("Offline & not cached. Check internet connection. (${e.localizedMessage ?: "Network error"})"))
-                }
+                Result.failure(ProductLookupException.NetworkUnavailable(e.localizedMessage))
             }
         }
     }
@@ -232,22 +191,59 @@ class DefaultProductRepository(
         productDao.clearAll()
     }
 
-    override suspend fun seedSampleScans() = withContext(ioDispatcher) {
-        DemoCatalog.samples.forEachIndexed { index, sampleItem ->
-            val product = DemoCatalog.getSample(sampleItem.barcode)
-            if (product != null) {
-                // Stagger scannedAt timestamps slightly so they have varied recent scan times
-                val staggeredTime = System.currentTimeMillis() - (index * 1000L * 60L * 35L)
-                productDao.insertOrReplace(product.copy(scannedAt = staggeredTime).toEntity())
+    override suspend fun saveCustomProduct(product: Product) = withContext(ioDispatcher) {
+        productDao.insertOrReplace(product.toEntity())
+    }
+
+    override suspend fun getHealthierAlternatives(product: Product, profile: UserProfile): List<Product> = withContext(ioDispatcher) {
+        val candidates = mutableListOf<Product>()
+
+        // 1. Try Open Food Facts Search API v2 by primary category tag for Nutri-Score A/B swaps
+        val primaryCategory = product.categoriesTags
+            .lastOrNull { it.startsWith("en:") }
+            ?.removePrefix("en:")
+
+        if (!primaryCategory.isNullOrBlank()) {
+            try {
+                val searchResponse = apiService.searchProductsByCategory(
+                    categoryTag = primaryCategory,
+                    nutritionGrades = "a,b",
+                    pageSize = 12
+                )
+                val remoteProducts = searchResponse.body()?.products.orEmpty()
+                remoteProducts.forEach { dto ->
+                    val code = dto.code?.takeIf { it.isNotBlank() } ?: return@forEach
+                    if (code != product.barcode) {
+                        candidates.add(mapDtoToProduct(code, dto, isFavorite = false))
+                    }
+                }
+            } catch (_: Exception) {
+                // Offline or API timeout: gracefully continue with local Room cache candidates
             }
         }
+
+        // 2. Include local Room scan history items
+        try {
+            val localCached = productDao.getAllScanned().first()
+                .map { it.toDomain(isOfflineCached = true) }
+            candidates.addAll(localCached)
+        } catch (_: Exception) {
+            // Ignore cache read issue
+        }
+
+        HealthAnalyzer.rankHealthierAlternatives(
+            target = product,
+            candidates = candidates,
+            profile = profile,
+            limit = 5
+        )
     }
 
     private fun mapDtoToProduct(barcode: String, dto: ProductDto, isFavorite: Boolean): Product {
         val name = dto.productName?.takeIf { it.isNotBlank() }
             ?: dto.productNameEn?.takeIf { it.isNotBlank() }
-            ?: "Unnamed Food Product"
-        val brand = dto.brands?.takeIf { it.isNotBlank() } ?: "Brand Unknown"
+            ?: defaultProductName
+        val brand = dto.brands?.takeIf { it.isNotBlank() } ?: defaultBrandName
         val imageUrl = dto.imageFrontUrl ?: dto.imageUrl ?: dto.imageFrontSmallUrl
 
         // Nutriscore & Ecoscore
@@ -323,7 +319,8 @@ class DefaultProductRepository(
             nutriments = nutriments,
             quantity = dto.quantity,
             servingSize = dto.servingSize,
-            isFavorite = isFavorite
+            isFavorite = isFavorite,
+            categoriesTags = dto.categoriesTags ?: emptyList()
         )
     }
 
@@ -331,7 +328,9 @@ class DefaultProductRepository(
         return tag.removePrefix("en:")
             .replace("-", " ")
             .split(" ")
-            .joinToString(" ") { it.replaceFirstChar { char -> char.uppercase() } }
+            .joinToString(" ") { word ->
+                word.replaceFirstChar { char -> char.titlecase(Locale.ROOT) }
+            }
     }
 
     private fun ScannedProductEntity.toDomain(isOfflineCached: Boolean): Product {
@@ -377,7 +376,8 @@ class DefaultProductRepository(
             servingSize = servingSize,
             scannedAt = scannedAt,
             isFavorite = isFavorite,
-            isOfflineCached = isOfflineCached
+            isOfflineCached = isOfflineCached,
+            categoriesTags = emptyList()
         )
     }
 

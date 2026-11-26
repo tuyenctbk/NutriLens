@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -51,6 +50,9 @@ import com.example.ui.theme.NutriScoreB
 import com.example.ui.theme.NutriScoreC
 import com.example.ui.theme.NutriScoreD
 import com.example.ui.theme.NutriScoreE
+import com.example.ui.theme.semanticCautionColors
+import com.example.ui.theme.semanticDangerColors
+import com.example.ui.theme.semanticSafeColors
 
 @Composable
 fun NutriScoreCard(grade: String?, modifier: Modifier = Modifier) {
@@ -60,13 +62,15 @@ fun NutriScoreCard(grade: String?, modifier: Modifier = Modifier) {
     val colors = listOf(NutriScoreA, NutriScoreB, NutriScoreC, NutriScoreD, NutriScoreE)
 
     Surface(
-        modifier = modifier.clickable { showDialog = true },
-        shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+        modifier = modifier
+            .clip(RoundedCornerShape(18.dp))
+            .clickable { showDialog = true },
+        shape = RoundedCornerShape(18.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
         tonalElevation = 1.dp
     ) {
         Column(
-            modifier = Modifier.padding(12.dp),
+            modifier = Modifier.padding(14.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -88,7 +92,7 @@ fun NutriScoreCard(grade: String?, modifier: Modifier = Modifier) {
 
             if (cleanGrade != null && cleanGrade in letters) {
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(3.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     letters.forEachIndexed { index, letter ->
@@ -97,9 +101,9 @@ fun NutriScoreCard(grade: String?, modifier: Modifier = Modifier) {
 
                         Box(
                             modifier = Modifier
-                                .size(if (isSelected) 30.dp else 22.dp)
-                                .clip(RoundedCornerShape(6.dp))
-                                .background(if (isSelected) letterColor else letterColor.copy(alpha = 0.25f)),
+                                .size(if (isSelected) 32.dp else 22.dp)
+                                .clip(RoundedCornerShape(7.dp))
+                                .background(if (isSelected) letterColor else letterColor.copy(alpha = 0.22f)),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
@@ -159,12 +163,12 @@ fun NutriScoreCard(grade: String?, modifier: Modifier = Modifier) {
             text = {
                 Column {
                     Text(
-                        text = "Nutri-Score evaluates 100g of food by balancing negative points (energy, sugars, saturated fat, sodium) against positive points (fiber, protein, fruit, vegetable & nut content).",
+                        text = stringResource(R.string.nutri_score_info_desc),
                         style = MaterialTheme.typography.bodyMedium
                     )
                     Spacer(modifier = Modifier.height(10.dp))
                     Text(
-                        text = "• Grade A (Green): Highest nutritional balance\n• Grade B (Light Green): Good nutritional balance\n• Grade C (Yellow): Balanced nutrition\n• Grade D (Orange): High in sugar, fat, or salt\n• Grade E (Red): Poor nutritional quality; consume in moderation",
+                        text = stringResource(R.string.nutri_score_info_grades),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -191,13 +195,15 @@ fun NovaGroupCard(group: Int?, modifier: Modifier = Modifier) {
     }
 
     Surface(
-        modifier = modifier.clickable { showDialog = true },
-        shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+        modifier = modifier
+            .clip(RoundedCornerShape(18.dp))
+            .clickable { showDialog = true },
+        shape = RoundedCornerShape(18.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
         tonalElevation = 1.dp
     ) {
         Column(
-            modifier = Modifier.padding(12.dp),
+            modifier = Modifier.padding(14.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -277,12 +283,12 @@ fun NovaGroupCard(group: Int?, modifier: Modifier = Modifier) {
             text = {
                 Column {
                     Text(
-                        text = "The NOVA classification categorizes food by the extent and purpose of industrial food processing (developed by the University of São Paulo, Brazil):",
+                        text = stringResource(R.string.nova_info_desc),
                         style = MaterialTheme.typography.bodyMedium
                     )
                     Spacer(modifier = Modifier.height(10.dp))
                     Text(
-                        text = "• NOVA 1: Unprocessed or minimally processed foods (whole plants, seeds, eggs, meat, milk)\n• NOVA 2: Processed culinary ingredients (oils, butter, sugar, salt)\n• NOVA 3: Processed foods (canned vegetables, cheese, cured meats, artisan breads)\n• NOVA 4: Ultra-processed food products (industrial formulations with colorings, flavor enhancers, high-fructose syrups, and emulsifiers)",
+                        text = stringResource(R.string.nova_info_grades),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -311,13 +317,15 @@ fun EcoScoreCard(grade: String?, modifier: Modifier = Modifier) {
     }
 
     Surface(
-        modifier = modifier.clickable { showDialog = true },
-        shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+        modifier = modifier
+            .clip(RoundedCornerShape(18.dp))
+            .clickable { showDialog = true },
+        shape = RoundedCornerShape(18.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
         tonalElevation = 1.dp
     ) {
         Column(
-            modifier = Modifier.padding(12.dp),
+            modifier = Modifier.padding(14.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -382,12 +390,12 @@ fun EcoScoreCard(grade: String?, modifier: Modifier = Modifier) {
             text = {
                 Column {
                     Text(
-                        text = "Eco-Score measures the environmental footprint of food products using Agribalyse life cycle analysis (carbon, water, land use, ecotoxicity) plus bonuses and penalties for packaging recyclability and organic farming labels.",
+                        text = stringResource(R.string.eco_score_info_desc),
                         style = MaterialTheme.typography.bodyMedium
                     )
                     Spacer(modifier = Modifier.height(10.dp))
                     Text(
-                        text = "• Grade A: Very low environmental impact\n• Grade B: Low environmental impact\n• Grade C: Moderate impact\n• Grade D: High impact\n• Grade E: Very high environmental impact",
+                        text = stringResource(R.string.eco_score_info_grades),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -407,18 +415,18 @@ fun AdditiveChip(additive: AdditiveDetail, modifier: Modifier = Modifier) {
     var showDialog by remember { mutableStateOf(false) }
 
     val (bg, textColor, borderC) = when (additive.risk) {
-        AdditiveRisk.HIGH -> Triple(Color(0xFFFFEBEE), Color(0xFFC62828), Color(0xFFEF9A9A))
-        AdditiveRisk.MODERATE -> Triple(Color(0xFFFFF8E1), Color(0xFFEF6C00), Color(0xFFFFE082))
-        AdditiveRisk.SAFE -> Triple(Color(0xFFE8F5E9), Color(0xFF2E7D32), Color(0xFFA5D6A7))
+        AdditiveRisk.HIGH -> semanticDangerColors()
+        AdditiveRisk.MODERATE -> semanticCautionColors()
+        AdditiveRisk.SAFE -> semanticSafeColors()
     }
 
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(8.dp))
+            .clip(RoundedCornerShape(10.dp))
             .background(bg)
-            .border(1.dp, borderC, RoundedCornerShape(8.dp))
+            .border(1.dp, borderC, RoundedCornerShape(10.dp))
             .clickable { showDialog = true }
-            .padding(horizontal = 8.dp, vertical = 6.dp)
+            .padding(horizontal = 10.dp, vertical = 7.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
@@ -427,7 +435,7 @@ fun AdditiveChip(additive: AdditiveDetail, modifier: Modifier = Modifier) {
                 fontSize = 12.sp,
                 color = textColor
             )
-            Spacer(modifier = Modifier.width(4.dp))
+            Spacer(modifier = Modifier.width(5.dp))
             Text(
                 text = additive.name,
                 fontSize = 12.sp,
@@ -458,7 +466,7 @@ fun AdditiveChip(additive: AdditiveDetail, modifier: Modifier = Modifier) {
                     )
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        text = stringResource(R.string.risk_level_label, additive.risk.name),
+                        text = stringResource(R.string.risk_level_label, localizedAdditiveRisk(additive.risk)),
                         style = MaterialTheme.typography.bodySmall,
                         color = textColor,
                         fontWeight = FontWeight.Bold

@@ -1,6 +1,5 @@
 package com.example.scanner
 
-import android.annotation.SuppressLint
 import android.util.Log
 import android.view.ViewGroup
 import androidx.annotation.OptIn
@@ -15,6 +14,7 @@ import androidx.camera.view.PreviewView
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
@@ -29,13 +29,13 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -49,20 +49,25 @@ import androidx.compose.ui.graphics.ClipOp
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipPath
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.google.mlkit.vision.barcode.BarcodeScanner
 import com.google.mlkit.vision.barcode.BarcodeScannerOptions
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.common.InputImage
+import kotlinx.coroutines.delay
 import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.atomic.AtomicReference
 
 @Composable
 fun BarcodeScannerView(
@@ -70,21 +75,60 @@ fun BarcodeScannerView(
     onBarcodeDetected: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     var camera by remember { mutableStateOf<Camera?>(null) }
-    var lastScannedBarcode by remember { mutableStateOf<String?>(null) }
-    var lastScannedTimestamp by remember { mutableStateOf(0L) }
+    var cameraProviderRef by remember { mutableStateOf<ProcessCameraProvider?>(null) }
+    var scanFlashActive by remember { mutableStateOf(false) }
+
+    val latestOnBarcodeDetected by rememberUpdatedState(onBarcodeDetected)
+    val lastScannedBarcode = remember { AtomicReference<String?>(null) }
+    val lastScannedTimestamp = remember { AtomicLong(0L) }
 
     val haptic = LocalHapticFeedback.current
     val cameraExecutor = remember { Executors.newSingleThreadExecutor() }
+    val barcodeScanner = remember {
+        val options = BarcodeScannerOptions.Builder()
+            .setBarcodeFormats(
+                Barcode.FORMAT_EAN_13,
+                Barcode.FORMAT_EAN_8,
+                Barcode.FORMAT_UPC_A,
+                Barcode.FORMAT_UPC_E,
+                Barcode.FORMAT_CODE_128,
+                Barcode.FORMAT_QR_CODE
+            )
+            .build()
+        BarcodeScanning.getClient(options)
+    }
+
+    val isDisposed = remember { AtomicBoolean(false) }
 
     LaunchedEffect(isTorchEnabled, camera) {
-        camera?.cameraControl?.enableTorch(isTorchEnabled)
+        val activeCamera = camera ?: return@LaunchedEffect
+        if (activeCamera.cameraInfo.hasFlashUnit()) {
+            runCatching { activeCamera.cameraControl.enableTorch(isTorchEnabled) }
+        }
+    }
+
+    LaunchedEffect(scanFlashActive) {
+        if (scanFlashActive) {
+            delay(280)
+            scanFlashActive = false
+        }
     }
 
     DisposableEffect(Unit) {
         onDispose {
+            isDisposed.set(true)
+            try {
+                cameraProviderRef?.unbindAll()
+            } catch (e: Exception) {
+                Log.w("NutriLensScanner", "Failed to unbind camera provider", e)
+            }
+            try {
+                barcodeScanner.close()
+            } catch (e: Exception) {
+                Log.w("NutriLensScanner", "Failed to close barcode scanner", e)
+            }
             cameraExecutor.shutdown()
         }
     }
@@ -100,27 +144,17 @@ fun BarcodeScannerView(
                     scaleType = PreviewView.ScaleType.FILL_CENTER
                 }
 
+                val mainExecutor = ContextCompat.getMainExecutor(ctx)
                 val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
                 cameraProviderFuture.addListener({
+                    if (isDisposed.get() || cameraExecutor.isShutdown) return@addListener
                     try {
                         val cameraProvider = cameraProviderFuture.get()
+                        cameraProviderRef = cameraProvider
 
                         val preview = Preview.Builder().build().also {
                             it.setSurfaceProvider(previewView.surfaceProvider)
                         }
-
-                        val options = BarcodeScannerOptions.Builder()
-                            .setBarcodeFormats(
-                                Barcode.FORMAT_EAN_13,
-                                Barcode.FORMAT_EAN_8,
-                                Barcode.FORMAT_UPC_A,
-                                Barcode.FORMAT_UPC_E,
-                                Barcode.FORMAT_CODE_128,
-                                Barcode.FORMAT_QR_CODE
-                            )
-                            .build()
-
-                        val scanner = BarcodeScanning.getClient(options)
 
                         val imageAnalysis = ImageAnalysis.Builder()
                             .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
@@ -128,16 +162,21 @@ fun BarcodeScannerView(
 
                         imageAnalysis.setAnalyzer(cameraExecutor) { imageProxy ->
                             processImageProxy(
-                                scanner = scanner,
+                                scanner = barcodeScanner,
                                 imageProxy = imageProxy,
                                 onBarcodeFound = { rawBarcode ->
                                     val now = System.currentTimeMillis()
-                                    // Debounce scans (minimum 1.5 seconds)
-                                    if (rawBarcode != lastScannedBarcode || now - lastScannedTimestamp > 1500) {
-                                        lastScannedBarcode = rawBarcode
-                                        lastScannedTimestamp = now
-                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                        onBarcodeDetected(rawBarcode)
+                                    val prevCode = lastScannedBarcode.get()
+                                    val prevTime = lastScannedTimestamp.get()
+                                    // Debounce duplicate scans (minimum 1.5 seconds)
+                                    if (rawBarcode != prevCode || now - prevTime > 1500L) {
+                                        lastScannedBarcode.set(rawBarcode)
+                                        lastScannedTimestamp.set(now)
+                                        mainExecutor.execute {
+                                            scanFlashActive = true
+                                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                            latestOnBarcodeDetected(rawBarcode)
+                                        }
                                     }
                                 }
                             )
@@ -155,7 +194,7 @@ fun BarcodeScannerView(
                     } catch (e: Exception) {
                         Log.e("NutriLensScanner", "Use case binding failed", e)
                     }
-                }, ContextCompat.getMainExecutor(ctx))
+                }, mainExecutor)
 
                 previewView
             },
@@ -163,13 +202,13 @@ fun BarcodeScannerView(
         )
 
         // Viewfinder reticle overlay & scanning animation
-        ScannerOverlay()
+        ScannerOverlay(isFlashActive = scanFlashActive)
     }
 }
 
 @OptIn(ExperimentalGetImage::class)
 private fun processImageProxy(
-    scanner: com.google.mlkit.vision.barcode.BarcodeScanner,
+    scanner: BarcodeScanner,
     imageProxy: ImageProxy,
     onBarcodeFound: (String) -> Unit
 ) {
@@ -198,11 +237,14 @@ private fun processImageProxy(
 }
 
 @Composable
-fun ScannerOverlay(modifier: Modifier = Modifier) {
+fun ScannerOverlay(
+    isFlashActive: Boolean = false,
+    modifier: Modifier = Modifier
+) {
     val infiniteTransition = rememberInfiniteTransition(label = "scanner_overlay_anim")
     val laserProgress by infiniteTransition.animateFloat(
-        initialValue = 0.05f,
-        targetValue = 0.95f,
+        initialValue = 0.06f,
+        targetValue = 0.94f,
         animationSpec = infiniteRepeatable(
             animation = tween(1800, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
@@ -218,17 +260,26 @@ fun ScannerOverlay(modifier: Modifier = Modifier) {
         ),
         label = "bracket_pulse"
     )
+    val flashAlpha by animateFloatAsState(
+        targetValue = if (isFlashActive) 0.35f else 0f,
+        animationSpec = tween(220),
+        label = "scan_flash_alpha"
+    )
 
     BoxWithConstraints(
         modifier = modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
-        val boxWidth = maxWidth * 0.78f
+        val boxWidth = (maxWidth * 0.78f).coerceAtMost(360.dp)
         val boxHeight = 230.dp
 
         val density = LocalDensity.current
         val widthPx = with(density) { boxWidth.toPx() }
         val heightPx = with(density) { boxHeight.toPx() }
+        val cornerPx = with(density) { 22.dp.toPx() }
+
+        val cutoutPath = remember { Path() }
+        val bracketPath = remember { Path() }
 
         // Semi-transparent darkened background with rounded cutout
         Canvas(modifier = Modifier.fillMaxSize()) {
@@ -240,96 +291,72 @@ fun ScannerOverlay(modifier: Modifier = Modifier) {
 
             val cutoutRect = RoundRect(
                 rect = Rect(Offset(left, top), Size(widthPx, heightPx)),
-                cornerRadius = CornerRadius(24f, 24f)
+                cornerRadius = CornerRadius(cornerPx, cornerPx)
             )
 
-            val backgroundPath = Path().apply {
-                addRect(Rect(0f, 0f, canvasWidth, canvasHeight))
-            }
-            val cutoutPath = Path().apply {
-                addRoundRect(cutoutRect)
-            }
+            cutoutPath.reset()
+            cutoutPath.addRoundRect(cutoutRect)
 
             clipPath(cutoutPath, clipOp = ClipOp.Difference) {
                 drawRect(Color.Black.copy(alpha = 0.62f))
             }
         }
 
-        // Viewfinder frame and high-tech corner brackets
+        // Viewfinder frame and precision corner brackets
         Box(
             modifier = Modifier
                 .size(boxWidth, boxHeight)
+                .background(
+                    color = Color(0xFF34D399).copy(alpha = flashAlpha),
+                    shape = RoundedCornerShape(22.dp)
+                )
                 .border(
-                    width = 1.dp,
-                    color = Color(0xFF34D399).copy(alpha = 0.25f),
-                    shape = RoundedCornerShape(20.dp)
+                    width = if (isFlashActive) 2.dp else 1.dp,
+                    color = Color(0xFF34D399).copy(alpha = if (isFlashActive) 0.9f else 0.28f),
+                    shape = RoundedCornerShape(22.dp)
                 )
         ) {
-            // High-tech Corner Brackets Canvas
+            // High-precision Corner Brackets Canvas
             Canvas(modifier = Modifier.fillMaxSize()) {
-                val bracketLen = 28.dp.toPx()
+                val bracketLen = 30.dp.toPx()
                 val strokeW = 3.5.dp.toPx()
-                val cornerRadius = 16.dp.toPx()
-                val bracketColor = Color(0xFF34D399).copy(alpha = bracketPulseAlpha)
+                val cornerRadius = 18.dp.toPx()
+                val bracketColor = if (isFlashActive) {
+                    Color.White
+                } else {
+                    Color(0xFF34D399).copy(alpha = bracketPulseAlpha)
+                }
+                val strokeStyle = Stroke(width = strokeW, cap = StrokeCap.Round)
 
+                bracketPath.reset()
                 // Top-Left
-                drawPath(
-                    path = Path().apply {
-                        moveTo(0f, bracketLen)
-                        lineTo(0f, cornerRadius)
-                        quadraticTo(0f, 0f, cornerRadius, 0f)
-                        lineTo(bracketLen, 0f)
-                    },
-                    color = bracketColor,
-                    style = androidx.compose.ui.graphics.drawscope.Stroke(
-                        width = strokeW,
-                        cap = StrokeCap.Round
-                    )
-                )
+                bracketPath.moveTo(0f, bracketLen)
+                bracketPath.lineTo(0f, cornerRadius)
+                bracketPath.quadraticTo(0f, 0f, cornerRadius, 0f)
+                bracketPath.lineTo(bracketLen, 0f)
 
                 // Top-Right
-                drawPath(
-                    path = Path().apply {
-                        moveTo(size.width - bracketLen, 0f)
-                        lineTo(size.width - cornerRadius, 0f)
-                        quadraticTo(size.width, 0f, size.width, cornerRadius)
-                        lineTo(size.width, bracketLen)
-                    },
-                    color = bracketColor,
-                    style = androidx.compose.ui.graphics.drawscope.Stroke(
-                        width = strokeW,
-                        cap = StrokeCap.Round
-                    )
-                )
+                bracketPath.moveTo(size.width - bracketLen, 0f)
+                bracketPath.lineTo(size.width - cornerRadius, 0f)
+                bracketPath.quadraticTo(size.width, 0f, size.width, cornerRadius)
+                bracketPath.lineTo(size.width, bracketLen)
 
                 // Bottom-Left
-                drawPath(
-                    path = Path().apply {
-                        moveTo(0f, size.height - bracketLen)
-                        lineTo(0f, size.height - cornerRadius)
-                        quadraticTo(0f, size.height, cornerRadius, size.height)
-                        lineTo(bracketLen, size.height)
-                    },
-                    color = bracketColor,
-                    style = androidx.compose.ui.graphics.drawscope.Stroke(
-                        width = strokeW,
-                        cap = StrokeCap.Round
-                    )
-                )
+                bracketPath.moveTo(0f, size.height - bracketLen)
+                bracketPath.lineTo(0f, size.height - cornerRadius)
+                bracketPath.quadraticTo(0f, size.height, cornerRadius, size.height)
+                bracketPath.lineTo(bracketLen, size.height)
 
                 // Bottom-Right
+                bracketPath.moveTo(size.width - bracketLen, size.height)
+                bracketPath.lineTo(size.width - cornerRadius, size.height)
+                bracketPath.quadraticTo(size.width, size.height, size.width, size.height - cornerRadius)
+                bracketPath.lineTo(size.width, size.height - bracketLen)
+
                 drawPath(
-                    path = Path().apply {
-                        moveTo(size.width - bracketLen, size.height)
-                        lineTo(size.width - cornerRadius, size.height)
-                        quadraticTo(size.width, size.height, size.width, size.height - cornerRadius)
-                        lineTo(size.width, size.height - bracketLen)
-                    },
+                    path = bracketPath,
                     color = bracketColor,
-                    style = androidx.compose.ui.graphics.drawscope.Stroke(
-                        width = strokeW,
-                        cap = StrokeCap.Round
-                    )
+                    style = strokeStyle
                 )
             }
 
@@ -346,7 +373,7 @@ fun ScannerOverlay(modifier: Modifier = Modifier) {
                         Brush.verticalGradient(
                             colors = listOf(
                                 Color.Transparent,
-                                Color(0xFF10B981).copy(alpha = 0.28f),
+                                Color(0xFF10B981).copy(alpha = 0.30f),
                                 Color.Transparent
                             )
                         )
